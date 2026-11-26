@@ -1,0 +1,27 @@
+# CitaClara
+
+Panel de recepción para clínicas pequeñas. Proceso: Spec Kit (`specs/`, `specs/MAPA.md`) bajo la constitución `.specify/memory/constitution.md`, que prevalece sobre todo lo demás.
+
+## Comandos
+
+- Entorno: `docker compose up -d --build` (web en `http://localhost:8080`; `PUERTO_WEB=8081` si el 8080 está ocupado) y `docker compose run --rm semilla` para cargar Clínica Eleva (clave `eleva-demo-2026`).
+- Backend (JDK 25, Docker en marcha para Testcontainers): `cd backend && ./mvnw verify`.
+- Frontend: `cd frontend && npm ci && npm test`; e2e contra el entorno levantado: `URL_BASE=http://localhost:8080 npm run e2e`.
+- Trazabilidad spec ↔ tests: `./scripts/trazabilidad.sh [specs/NNN-…]` (debe salir vacía).
+
+## Decisiones y convenciones transversales
+
+- [001] RN1 (sin solapes) la garantiza la *exclusion constraint* `cita_sin_solape` de PostgreSQL (`btree_gist`, `tstzrange '[)'`, solo RESERVADA/COMPLETADA); ningún camino de escritura queda exento, ni la semilla. Toda feature que escriba en la agenda incluye pruebas de solape y de altas simultáneas contra PostgreSQL real.
+- [001] Las altas de cita bloquean la fila del profesional (`RepositorioProfesional.bloquear`, `FOR UPDATE`) al empezar la transacción para evitar tormentas de interbloqueos (`40P01`) en la restricción; ante un interbloqueo residual se reintenta. Cualquier nuevo camino que inserte citas en concurrencia debe hacer lo mismo.
+- [001] Importes siempre en céntimos enteros (`int`/`integer`, JSON entero); el único formateador visible es `frontend/src/formato/euros.ts` (CLDR `es-ES`: «1234,50 €», «12.345,50 €»).
+- [001] Instantes en `timestamptz`/`Instant`; lógica en `Europe/Madrid` mediante `comun/ZonaClinica` y un `Clock` inyectado (nunca `now()` directo). El API intercambia fecha `YYYY-MM-DD` y hora `HH:mm` locales y el frontend no hace aritmética de zonas. No configurar `hibernate.jdbc.time_zone` (desplaza las columnas `time`).
+- [001] Errores del API en Problem Details con `codigo` (para el programa, nunca visible) y `mensaje` en español de España listo para mostrarse; se lanzan como `ErrorNegocio` y los traduce `ManejadorErrores`.
+- [001] Aislamiento por clínica: toda tabla de negocio lleva `clinica_id` (con FK compuestas en `cita`), los repositorios reciben el `clinicaId` de la sesión (`@RequestAttribute(SesionClinica.CLINICA)`) y un recurso ajeno responde igual que uno inexistente (404).
+- [001] Sesión: clave compartida por clínica con BCrypt, caducidad absoluta de 8 h (`InterceptorSesion`), cookie `HttpOnly` + `SameSite=Strict`, mismo origen vía nginx y todo POST solo en JSON (415 `TIPO_NO_ADMITIDO`) como defensa CSRF; sin Spring Security completo.
+- [001] Las especialidades se guardan como valor interno (`nutricion`) y se muestran solo con la etiqueta de `clinica/Especialidades` (`especialidadNombre` en el API).
+- [001] Trazabilidad: el nombre visible de cada test empieza por `[NNN][FR-xxx][USn-ACm]` (`@DisplayName` en JUnit, título en Vitest/Playwright); `scripts/trazabilidad.sh` falla si un FR, SC o escenario no tiene test.
+- [001] Datos de demostración: generador puro con `Random` de semilla fija y posiciones relativas en días laborables respecto al día de carga; las cifras citables están en `specs/001-nucleo-agenda/datos-demostracion.md` y las verifica `DatosDemostracionDocumentadosTest` (regenerar con `-DactualizarDatosDemostracion=true` tras un cambio deliberado).
+- [001] Backend organizado por capacidad de dominio (`acceso`, `clinica`, `paciente`, `cita`, `agenda`, `semilla`, `comun`); una feature nueva añade su propio paquete. Esquema solo por migraciones Flyway en SQL (`ddl-auto=validate`).
+- [001] Stack: Spring Boot 4 (starters modulares, p. ej. `spring-boot-starter-webmvc` y `spring-boot-starter-flyway`; Jackson 3 en `tools.jackson.*`), Testcontainers 2 con `postgres:18.7-alpine`; React 19 sin enrutador ni gestor de estado, Tailwind v4 con tokens OKLCH.
+- [001] Pruebas de integración: heredan de `soporte/PruebaIntegracionBase` (aplicación real en puerto aleatorio, `ClienteApi` con cookie propia por «pestaña», `RelojControlable`, `DatosPrueba`); al mover el reloj más de 8 h hay que volver a iniciar sesión.
+- [001] e2e: cada prueba busca sus huecos libres en el momento (`ApiPrueba.huecoLibre`) para poder repetirse sobre la misma semilla, y comprueba en cada pantalla 360 px, texto no desbordado, objetivos táctiles ≥ 44 px y axe (`pantallaAccesible`).

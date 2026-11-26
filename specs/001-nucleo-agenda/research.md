@@ -28,6 +28,8 @@ Stack propuesto por el usuario: Java + Spring Boot (JPA/Hibernate), React, Postg
   - Bloqueo pesimista (`SELECT … FOR UPDATE` sobre el profesional): correcto, pero serializa todas las altas del profesional y es fácil olvidarlo en un camino nuevo.
   - Tabla de franjas fijas con clave única: impone rejilla, que la spec descarta («la agenda no impone una rejilla fija»).
 
+- **Nota de implementación** (26/11/2026): con altas simultáneas, la *exclusion constraint* puede resolver el conflicto como interbloqueo (`40P01`) en lugar de como violación (`23P01`), y PostgreSQL los resuelve de uno en uno cada `deadlock_timeout`. Para evitarlo, el alta bloquea la fila del profesional (`SELECT … FOR UPDATE`) al empezar su transacción: las altas del mismo profesional se serializan y la comprobación previa ve a la ganadora. La garantía sigue siendo la restricción (cubre cualquier otro camino) y el alta reintenta ante un interbloqueo residual.
+
 ## D3. Concurrencia en cambios de estado (FR-025, US3-AC7)
 
 - **Decisión**: bloqueo optimista con `@Version` en la entidad `Cita`. Cada cita viaja al cliente con su `version`; el cambio de estado la envía de vuelta. Si no coincide con la actual (porque otra persona ya cambió el estado), se responde 409 con la cita real y el aviso «Otra persona acaba de cambiar esta cita. Ahora está: Completada.».
