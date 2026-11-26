@@ -1,0 +1,422 @@
+openapi: 3.1.0
+info:
+  title: CitaClara — API del panel de recepción (001-nucleo-agenda)
+  version: 0.1.0
+  description: |
+    Contrato HTTP entre el frontend de recepción y el backend.
+    - Mismo origen: el frontend lo sirve nginx y `/api` se redirige al backend.
+    - Autenticación por cookie de sesión `HttpOnly` obtenida en `POST /api/clinicas/{identificador}/sesion`.
+    - Fechas locales de Madrid como `YYYY-MM-DD`, horas locales como `HH:mm` (24 h). Ver research.md D4.
+    - Importes en céntimos enteros (4000 = 40,00 €). Ver research.md D5.
+    - Errores en formato Problem Details (RFC 9457) con `codigo` (para el programa) y `mensaje`
+      (español de España, apto para mostrarse tal cual; nunca contiene identificadores internos, FR-027).
+    - Todo endpoint salvo el de acceso responde 401 `SESION_CADUCADA` o `SIN_SESION` si no hay sesión válida (FR-001, FR-002).
+servers:
+  - url: /api
+
+paths:
+  /clinicas/{identificador}:
+    get:
+      summary: Datos públicos mínimos de la clínica para la pantalla de acceso
+      operationId: obtenerClinicaPublica
+      parameters:
+        - $ref: '#/components/parameters/Identificador'
+      responses:
+        '200':
+          description: Clínica encontrada
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [nombre]
+                properties:
+                  nombre: { type: string, example: Clínica Eleva }
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+
+  /clinicas/{identificador}/sesion:
+    post:
+      summary: Acceder al panel con la clave de la clínica (FR-001, US1-AC1, US1-AC2)
+      operationId: iniciarSesion
+      parameters:
+        - $ref: '#/components/parameters/Identificador'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [clave]
+              properties:
+                clave: { type: string, minLength: 1, example: eleva-demo-2026 }
+      responses:
+        '204':
+          description: Acceso concedido. Fija la cookie de sesión (válida 8 h desde ahora, FR-002).
+        '401':
+          description: Clave incorrecta (o clínica inexistente; misma respuesta). `codigo = CLAVE_INCORRECTA`, `mensaje = «La clave no es correcta. Revísala e inténtalo de nuevo.»`
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+
+  /sesion:
+    get:
+      summary: Contexto de la sesión actual (clínica, catálogo, horario, hoy)
+      operationId: obtenerContexto
+      responses:
+        '200':
+          description: Sesión válida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Contexto' }
+        '401':
+          $ref: '#/components/responses/SinSesion'
+    delete:
+      summary: Cerrar la sesión explícitamente (FR-002)
+      operationId: cerrarSesion
+      responses:
+        '204':
+          description: Sesión cerrada (también si ya no existía).
+
+  /agenda:
+    get:
+      summary: Agenda del día de un profesional (FR-005–FR-007, US1)
+      operationId: obtenerAgenda
+      parameters:
+        - name: profesionalId
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+        - name: fecha
+          in: query
+          required: false
+          description: Fecha local de Madrid. Si se omite, hoy según el servidor (US1-AC3).
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Agenda calculada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Agenda' }
+        '401':
+          $ref: '#/components/responses/SinSesion'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+
+  /pacientes:
+    get:
+      summary: Buscar pacientes por nombre (sin tildes ni mayúsculas) o teléfono (FR-018)
+      operationId: buscarPacientes
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+      responses:
+        '200':
+          description: Hasta 20 resultados ordenados por nombre
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 20
+                items: { $ref: '#/components/schemas/Paciente' }
+        '401':
+          $ref: '#/components/responses/SinSesion'
+
+  /citas:
+    post:
+      summary: Dar de alta una cita, opcionalmente con paciente nuevo, de forma atómica (FR-009–FR-020, US2)
+      operationId: crearCita
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NuevaCita' }
+      responses:
+        '201':
+          description: Cita registrada como RESERVADA
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cita' }
+        '400':
+          description: |
+            Datos no válidos. `codigo`: `DATOS_NO_VALIDOS` (con `campos` en `errores`), `HORA_NO_VALIDA`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+        '401':
+          $ref: '#/components/responses/SinSesion'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: |
+            Conflicto. `codigo`:
+            - `SOLAPE` (US2-AC2): «Jorge ya tiene una cita de 10:00 a 10:45. Elige otro hueco.» — incluye `citaConflictiva`.
+            - `HUECO_RECIEN_OCUPADO` (US2-AC5): «Ese hueco se acaba de ocupar. Elige otro hueco.»
+            - `PACIENTE_DUPLICADO` (FR-020): «Ya hay un paciente con ese teléfono: Ana Pérez. ¿Quieres usar su ficha?» — incluye `pacienteExistente`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+        '422':
+          description: |
+            Regla de negocio incumplida. `codigo`:
+            - `HORA_PASADA` (RN2, US2-AC7): «No se pueden crear citas en el pasado. Elige una hora posterior.»
+            - `FUERA_DE_HORARIO` (FR-015, US2-AC10): «La cita debe empezar y terminar dentro del horario de atención (09:00 a 20:00).» / «La clínica no atiende ese día.»
+            - `SERVICIO_NO_DISPONIBLE` (FR-010, US2-AC9): «María no ofrece ese servicio. Elige uno de fisioterapia.»
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+
+  /citas/{citaId}/estado:
+    post:
+      summary: Cambiar el estado de una cita reservada (FR-021–FR-025, US3)
+      operationId: cambiarEstadoCita
+      parameters:
+        - name: citaId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [accion, version]
+              properties:
+                accion: { $ref: '#/components/schemas/Accion' }
+                version:
+                  type: integer
+                  description: Versión de la cita que vio la recepcionista (D3).
+      responses:
+        '200':
+          description: Estado cambiado; devuelve la cita actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Cita' }
+        '401':
+          $ref: '#/components/responses/SinSesion'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: |
+            `ESTADO_YA_CAMBIADO` (US3-AC7): «Otra persona acaba de cambiar esta cita. Ahora está: Completada.» — incluye `citaActual`.
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+        '422':
+          description: |
+            `ACCION_NO_DISPONIBLE` (US3-AC4/AC5/AC6): p. ej. «Esta cita ya ha empezado: no se puede cancelar. Márcala como completada o no asistida.»
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+
+components:
+  parameters:
+    Identificador:
+      name: identificador
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9-]+$', example: eleva }
+
+  responses:
+    SinSesion:
+      description: |
+        Sin sesión o sesión caducada. `codigo`: `SIN_SESION` o `SESION_CADUCADA`
+        («Tu sesión ha caducado. Vuelve a introducir la clave de la clínica.»). La acción no se aplica.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+    NoEncontrado:
+      description: Recurso inexistente o de otra clínica (misma respuesta, FR-003). `codigo = NO_ENCONTRADO`.
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+
+  schemas:
+    Problema:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo:
+          type: string
+          description: Código estable para el programa. Nunca se muestra al usuario.
+        mensaje:
+          type: string
+          description: Texto en español de España listo para mostrarse.
+        errores:
+          type: array
+          description: Errores por campo en `DATOS_NO_VALIDOS`.
+          items:
+            type: object
+            required: [campo, mensaje]
+            properties:
+              campo: { type: string, example: nuevoPaciente.telefono }
+              mensaje: { type: string, example: Escribe un teléfono válido, por ejemplo 612 345 678. }
+        citaConflictiva: { $ref: '#/components/schemas/Cita' }
+        citaActual: { $ref: '#/components/schemas/Cita' }
+        pacienteExistente: { $ref: '#/components/schemas/Paciente' }
+
+    Contexto:
+      type: object
+      required: [clinica, hoy, profesionales, servicios, horario, sesionCaducaA]
+      properties:
+        clinica:
+          type: object
+          required: [nombre]
+          properties:
+            nombre: { type: string }
+        hoy: { type: string, format: date }
+        sesionCaducaA:
+          type: string
+          format: date-time
+          description: Instante de caducidad absoluta (accesoEn + 8 h).
+        profesionales:
+          type: array
+          items: { $ref: '#/components/schemas/Profesional' }
+        servicios:
+          type: array
+          items: { $ref: '#/components/schemas/Servicio' }
+        horario:
+          type: array
+          description: Horario semanal; días ausentes = cerrado.
+          items:
+            type: object
+            required: [diaSemana, apertura, cierre]
+            properties:
+              diaSemana: { type: integer, minimum: 1, maximum: 7 }
+              apertura: { $ref: '#/components/schemas/HoraLocal' }
+              cierre: { $ref: '#/components/schemas/HoraLocal' }
+
+    Profesional:
+      type: object
+      required: [id, nombre, especialidad]
+      properties:
+        id: { type: integer, format: int64 }
+        nombre: { type: string, example: Jorge }
+        especialidad: { type: string, example: fisioterapia }
+
+    Servicio:
+      type: object
+      required: [id, nombre, especialidad, duracionMinutos, precioCentimos]
+      properties:
+        id: { type: integer, format: int64 }
+        nombre: { type: string, example: Sesión fisioterapia }
+        especialidad: { type: string, example: fisioterapia }
+        duracionMinutos: { type: integer, example: 45 }
+        precioCentimos: { type: integer, example: 4000 }
+
+    Paciente:
+      type: object
+      required: [id, nombre, telefono]
+      properties:
+        id: { type: integer, format: int64 }
+        nombre: { type: string }
+        telefono: { type: string, example: '+34612345678' }
+        email: { type: [string, 'null'] }
+
+    NuevoPaciente:
+      type: object
+      required: [nombre, telefono]
+      properties:
+        nombre: { type: string, minLength: 1, maxLength: 120 }
+        telefono: { type: string, description: 'Se normaliza en el servidor (research.md D11).' }
+        email: { type: [string, 'null'], format: email }
+
+    NuevaCita:
+      type: object
+      required: [profesionalId, servicioId, fecha, horaInicio]
+      description: Exactamente uno de `pacienteId` o `nuevoPaciente`.
+      properties:
+        profesionalId: { type: integer, format: int64 }
+        servicioId: { type: integer, format: int64 }
+        pacienteId: { type: integer, format: int64 }
+        nuevoPaciente: { $ref: '#/components/schemas/NuevoPaciente' }
+        fecha: { type: string, format: date }
+        horaInicio: { $ref: '#/components/schemas/HoraLocal' }
+      oneOf:
+        - required: [pacienteId]
+        - required: [nuevoPaciente]
+
+    Estado:
+      type: string
+      enum: [RESERVADA, COMPLETADA, CANCELADA, NO_ASISTIDA]
+
+    Accion:
+      type: string
+      enum: [CANCELAR, COMPLETAR, MARCAR_NO_ASISTIDA]
+
+    HoraLocal:
+      type: string
+      pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+      example: '10:45'
+
+    Cita:
+      type: object
+      required: [id, fecha, horaInicio, horaFin, profesional, paciente, servicio, importeCentimos, estado, acciones, version]
+      properties:
+        id: { type: integer, format: int64 }
+        fecha: { type: string, format: date }
+        horaInicio: { $ref: '#/components/schemas/HoraLocal' }
+        horaFin: { $ref: '#/components/schemas/HoraLocal' }
+        profesional:
+          type: object
+          required: [id, nombre]
+          properties:
+            id: { type: integer, format: int64 }
+            nombre: { type: string }
+        paciente:
+          type: object
+          required: [id, nombre, telefono]
+          properties:
+            id: { type: integer, format: int64 }
+            nombre: { type: string }
+            telefono: { type: string }
+        servicio:
+          type: object
+          required: [id, nombre]
+          properties:
+            id: { type: integer, format: int64 }
+            nombre: { type: string }
+        importeCentimos: { type: integer, example: 4000 }
+        estado: { $ref: '#/components/schemas/Estado' }
+        acciones:
+          type: array
+          description: Acciones disponibles ahora mismo según estado y hora (FR-022, FR-023). Vacía en estados finales.
+          items: { $ref: '#/components/schemas/Accion' }
+        version: { type: integer }
+
+    Hueco:
+      type: object
+      required: [horaInicio, horaFin]
+      properties:
+        horaInicio: { $ref: '#/components/schemas/HoraLocal' }
+        horaFin: { $ref: '#/components/schemas/HoraLocal' }
+        reservable:
+          type: boolean
+          description: Falso si el hueco ya ha pasado entero (no se ofrece «Reservar aquí»).
+
+    Agenda:
+      type: object
+      required: [fecha, hoy, profesional, citas, huecos]
+      properties:
+        fecha: { type: string, format: date }
+        hoy: { type: string, format: date }
+        profesional: { $ref: '#/components/schemas/Profesional' }
+        horario:
+          description: Horario del día o null si la clínica no atiende ese día.
+          oneOf:
+            - type: 'null'
+            - type: object
+              required: [apertura, cierre]
+              properties:
+                apertura: { $ref: '#/components/schemas/HoraLocal' }
+                cierre: { $ref: '#/components/schemas/HoraLocal' }
+        citas:
+          type: array
+          description: Todas las citas del día en cualquier estado, ordenadas por hora de inicio.
+          items: { $ref: '#/components/schemas/Cita' }
+        huecos:
+          type: array
+          description: Intervalos libres del horario (sin citas reservadas o completadas), ordenados.
+          items: { $ref: '#/components/schemas/Hueco' }
