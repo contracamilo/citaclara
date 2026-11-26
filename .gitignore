@@ -1,0 +1,6 @@
+# Notas locales de prompts (no forman parte del producto)
+prompt_constitucion.txt
+prompts_specs_paralelas.txt
+
+# Ajustes locales de Claude Code
+.claude/settings.local.json
