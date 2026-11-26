@@ -11,6 +11,9 @@ info:
     - Errores en formato Problem Details (RFC 9457) con `codigo` (para el programa) y `mensaje`
       (español de España, apto para mostrarse tal cual; nunca contiene identificadores internos, FR-027).
     - Todo endpoint salvo el de acceso responde 401 `SESION_CADUCADA` o `SIN_SESION` si no hay sesión válida (FR-001, FR-002).
+    - Todo POST cuyo cuerpo no sea `application/json` responde 415 `TIPO_NO_ADMITIDO`
+      («No se ha podido enviar la petición. Recarga la página e inténtalo de nuevo.»); parte de la defensa CSRF (research.md D6).
+    - `especialidad` es un valor interno; el texto visible es `especialidadNombre` (FR-027).
 servers:
   - url: /api
 
@@ -290,19 +293,21 @@ components:
 
     Profesional:
       type: object
-      required: [id, nombre, especialidad]
+      required: [id, nombre, especialidad, especialidadNombre]
       properties:
         id: { type: integer, format: int64 }
         nombre: { type: string, example: Jorge }
-        especialidad: { type: string, example: fisioterapia }
+        especialidad: { type: string, example: fisioterapia, description: Valor interno; no se muestra. }
+        especialidadNombre: { type: string, example: Fisioterapia, description: Etiqueta visible en español de España. }
 
     Servicio:
       type: object
-      required: [id, nombre, especialidad, duracionMinutos, precioCentimos]
+      required: [id, nombre, especialidad, especialidadNombre, duracionMinutos, precioCentimos]
       properties:
         id: { type: integer, format: int64 }
         nombre: { type: string, example: Sesión fisioterapia }
-        especialidad: { type: string, example: fisioterapia }
+        especialidad: { type: string, example: fisioterapia, description: Valor interno; no se muestra. }
+        especialidadNombre: { type: string, example: Fisioterapia, description: Etiqueta visible en español de España. }
         duracionMinutos: { type: integer, example: 45 }
         precioCentimos: { type: integer, example: 4000 }
 

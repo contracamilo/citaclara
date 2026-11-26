@@ -73,7 +73,7 @@ Stack propuesto por el usuario: Java + Spring Boot (JPA/Hibernate), React, Postg
 
 ## D8. Huecos libres y acciones disponibles: cálculo en el servidor
 
-- **Decisión**: `GET /api/agenda` devuelve ya calculados las citas del día, los **huecos libres** (intervalos del horario sin citas reservadas o completadas, FR-007) y, para cada cita, la lista de **acciones disponibles** (`CANCELAR`, `COMPLETAR`, `NO_ASISTIDA`) según el estado y el reloj del servidor (FR-022, FR-023).
+- **Decisión**: `GET /api/agenda` devuelve ya calculados las citas del día, los **huecos libres** (intervalos del horario sin citas reservadas o completadas, FR-007) y, para cada cita, la lista de **acciones disponibles** (`CANCELAR`, `COMPLETAR`, `MARCAR_NO_ASISTIDA`) según el estado y el reloj del servidor (FR-022, FR-023).
 - **Motivo**: las reglas viven en un solo sitio, se prueban en el backend y el frontend no puede desincronizarse con ellas.
 
 ## D9. Migraciones y esquema

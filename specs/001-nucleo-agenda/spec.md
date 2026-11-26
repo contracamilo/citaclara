@@ -4,7 +4,7 @@
 
 **Creada**: 26/11/2026
 
-**Estado**: Borrador
+**Estado**: Aprobada
 
 **Propietario**: feature 001-nucleo-agenda (registrado en `specs/MAPA.md`)
 
@@ -20,6 +20,7 @@
 - Q: ¿Cuándo debe caducar el acceso al panel después de haber introducido la clave de la clínica? → A: Opción D — caduca 8 horas después del acceso, con independencia de la actividad.
 - Q: ¿Qué debe pasar cuando alguien introduce mal la clave de la clínica varias veces seguidas? → A: Opción A — sin límite de intentos en esta feature (deuda consciente, junto a la clave compartida).
 - Q: ¿La historia y el futuro de los datos de demostración se cuentan en semanas naturales o en días laborables? → A: En días laborables (lunes a viernes, sin descontar festivos): 40 días laborables hacia atrás y 10 hacia delante desde el día de carga, que no recibe citas; las cifras se citan como «día laborable −n / +n». Sustituye al ejemplo «semana −3» de la primera aclaración.
+- Q: Con el reloj a las 12:00:00 o a las 12:00:30, ¿se puede reservar una cita que empiece a las 12:00? → A: No. Manda FR-014: se rechaza toda cita cuyo inicio no sea posterior al instante actual; la primera hora reservable es la siguiente en pasos de 5 minutos (12:05).
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
@@ -109,7 +110,7 @@ Cualquier persona del equipo puede cargar los datos de demostración de Clínica
 - **Citas contiguas**: una cita que empieza justo cuando termina otra no es solape.
 - **Solape parcial, contención y coincidencia exacta**: cualquier intersección de tiempo positiva entre dos citas reservadas o completadas del mismo profesional es solape y se rechaza.
 - **Reservas simultáneas**: dos o más altas que compiten por el mismo hueco (total o parcialmente) → exactamente una prospera.
-- **Hora de inicio igual a «ahora»**: se considera pasado si ya ha transcurrido el minuto; las citas solo pueden empezar en el futuro.
+- **Hora de inicio igual a «ahora»**: se rechaza toda cita cuyo inicio no sea posterior al instante actual (FR-014). Por ejemplo, ni a las 12:00:00 ni a las 12:00:30 se puede reservar a las 12:00; la primera hora reservable es 12:05.
 - **Cambio de horario verano/invierno**: una cita en un día con cambio de hora conserva su hora local y su duración real; ni se desplaza, ni se duplica, ni desaparece de la agenda.
 - **Cita que cruzaría el fin del horario de atención o la medianoche**: se rechaza.
 - **Cancelación tardía**: si el paciente avisa cuando su cita ya ha empezado, no se cancela; se marca como no asistida (o completada si finalmente se atiende).
