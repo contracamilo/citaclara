@@ -24,6 +24,9 @@ public class DatosPrueba {
     /** Jueves 26/11/2026: un día laborable futuro. */
     public static final LocalDate MANANA = HOY.plusDays(1);
 
+    /** Teléfono de las clínicas de prueba (003, FR-009). */
+    public static final String TELEFONO_CLINICA = "+34 910 555 010";
+
     public static final String CLAVE_ELEVA = "clave-eleva";
     public static final String CLAVE_OTRA = "clave-otra";
 
@@ -38,8 +41,8 @@ public class DatosPrueba {
     /** Clínica con horario de lunes a viernes de 09:00 a 20:00. */
     public long clinica(String identificador, String nombre, String clave) {
         long id = jdbc.queryForObject(
-                "INSERT INTO clinica (identificador, nombre, clave_hash) VALUES (?, ?, ?) RETURNING id",
-                Long.class, identificador, nombre, BCRYPT.encode(clave));
+                "INSERT INTO clinica (identificador, nombre, clave_hash, telefono) VALUES (?, ?, ?, ?) RETURNING id",
+                Long.class, identificador, nombre, BCRYPT.encode(clave), TELEFONO_CLINICA);
         for (int dia = 1; dia <= 5; dia++) {
             horario(id, dia, LocalTime.of(9, 0), LocalTime.of(20, 0));
         }

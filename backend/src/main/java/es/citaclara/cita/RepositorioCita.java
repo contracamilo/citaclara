@@ -47,4 +47,25 @@ public interface RepositorioCita extends JpaRepository<Cita, Long> {
             """)
     List<Cita> ocupantesSolapadas(@Param("profesionalId") Long profesionalId,
                                   @Param("inicio") Instant inicio, @Param("fin") Instant fin);
+
+    /**
+     * Citas reservadas con inicio en [desde, hasta), con paciente con email y sin recordatorio aún
+     * (003, research D4). Mide en instantes: el cambio de horario no desplaza ni duplica citas.
+     */
+    @Query("""
+            select c from Cita c join fetch c.profesional join fetch c.servicio join fetch c.paciente p
+            where c.estado = es.citaclara.cita.EstadoCita.RESERVADA
+              and c.inicio >= :desde and c.inicio < :hasta
+              and p.email is not null and length(trim(p.email)) > 0
+              and not exists (select 1 from es.citaclara.recordatorio.Recordatorio r where r.citaId = c.id)
+            order by c.inicio, c.id
+            """)
+    List<Cita> paraRecordatorio(@Param("desde") Instant desde, @Param("hasta") Instant hasta);
+
+    /** Cita de un enlace de cancelación, por la huella del recordatorio (003, research D5). */
+    @Query("""
+            select c from Cita c join fetch c.profesional join fetch c.servicio join fetch c.paciente
+            where c.id = (select r.citaId from es.citaclara.recordatorio.Recordatorio r where r.enlaceHuella = :huella)
+            """)
+    Optional<Cita> buscarPorHuella(@Param("huella") String huella);
 }

@@ -18,7 +18,8 @@ public record CitaRespuesta(
         int importeCentimos,
         EstadoCita estado,
         List<Accion> acciones,
-        int version) {
+        int version,
+        CanceladaPor canceladaPor) {
 
     public record Ref(long id, String nombre) {
     }
@@ -40,6 +41,7 @@ public record CitaRespuesta(
                 cita.getImporteCentimos(),
                 cita.getEstado(),
                 MaquinaEstadosCita.accionesDisponibles(cita.getEstado(), cita.getInicio(), ahora),
-                cita.getVersion());
+                cita.getVersion(),
+                cita.getCanceladaPor());
     }
 }

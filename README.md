@@ -31,6 +31,7 @@ Portal del paciente: abre **http://localhost:8080/eleva/mis-citas**, escribe el 
 
 - `docker compose ps` debe mostrar `db` y `api` como *healthy*.
 - La semilla se puede repetir cuando quieras: borra y recrea Clínica Eleva. Toma el día de carga como referencia: la historia ocupa los 40 días laborables anteriores y el futuro los 10 siguientes. Las cifras exactas están en [`datos-demostracion.md`](specs/001-nucleo-agenda/datos-demostracion.md).
+- **Recordatorios de cita (003)**: el backend genera cada día a las 09:00 (hora peninsular, `RECORDATORIOS_CRON`) un email por cada cita reservada de las próximas 24-48 horas. Sin servidor SMTP (`CORREO_SMTP_HOST`), cada correo se guarda como `.eml` en `datos/salida-correo/` y no se envía nada. Para ejecutar el proceso a mano: `docker compose run --rm recordatorios` (en Linux, la carpeta `datos/salida-correo/` debe ser escribible por el contenedor: `chmod a+rwx datos/salida-correo`). El enlace del correo (`/cancelar/{enlace}`, base en `CITACLARA_URL_PUBLICA`) deja al paciente cancelar hasta 24 h antes. «cancelar» queda reservado y no puede usarse como identificador de clínica. Detalle en [`specs/003-recordatorios-cita/quickstart.md`](specs/003-recordatorios-cita/quickstart.md).
 - Para pararlo: `docker compose down` (añade `-v` para borrar también la base de datos).
 
 ### Puertos
@@ -103,8 +104,8 @@ cd frontend && URL_BASE=http://localhost:8080 URL_CORREO=http://localhost:8025 n
 ## Estructura
 
 ```text
-backend/            API Spring Boot, organizada por capacidad (acceso, clinica, paciente, cita, agenda, analitica, semilla, portal)
-frontend/           SPA React (acceso, agenda, analitica, citas, portal, cancelaciones, ui, formato, api) y sus pruebas
+backend/            API Spring Boot, organizada por capacidad (acceso, clinica, paciente, cita, agenda, analitica, semilla, portal, recordatorio, correo)
+frontend/           SPA React (acceso, agenda, analitica, citas, portal, cancelaciones, cancelacion, ui, formato, api) y sus pruebas
 specs/              specs de Spec Kit; MAPA.md lista cada spec y su propietario
 scripts/            trazabilidad.sh
 docker-compose.yml  entorno completo

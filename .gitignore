@@ -25,3 +25,6 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+
+# Correo simulado (003-recordatorios-cita): los .eml generados no se versionan
+datos/salida-correo/*.eml

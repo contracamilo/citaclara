@@ -25,13 +25,18 @@ public class Clinica {
     @Column(name = "clave_hash", nullable = false, length = 100)
     private String claveHash;
 
+    /** Teléfono visible para los pacientes en los recordatorios (003, FR-009). */
+    @Column(nullable = false, length = 20)
+    private String telefono;
+
     protected Clinica() {
     }
 
-    public Clinica(String identificador, String nombre, String claveHash) {
+    public Clinica(String identificador, String nombre, String claveHash, String telefono) {
         this.identificador = identificador;
         this.nombre = nombre;
         this.claveHash = claveHash;
+        this.telefono = telefono;
     }
 
     public Long getId() {
@@ -48,5 +53,9 @@ public class Clinica {
 
     public String getClaveHash() {
         return claveHash;
+    }
+
+    public String getTelefono() {
+        return telefono;
     }
 }

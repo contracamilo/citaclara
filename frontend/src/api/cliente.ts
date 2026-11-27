@@ -2,6 +2,7 @@ import type {
   Accion,
   Agenda,
   Analitica,
+  Cancelacion,
   CancelacionesPortal,
   Cita,
   CitaPortal,
@@ -47,6 +48,7 @@ export class ErrorApi extends Error implements Problema {
   readonly citaConflictiva?: Problema['citaConflictiva'];
   readonly citaActual?: Problema['citaActual'];
   readonly pacienteExistente?: Problema['pacienteExistente'];
+  readonly cancelacion?: Problema['cancelacion'];
 
   constructor(estadoHttp: number, problema: Problema) {
     super(problema.mensaje);
@@ -58,6 +60,7 @@ export class ErrorApi extends Error implements Problema {
     this.citaConflictiva = problema.citaConflictiva;
     this.citaActual = problema.citaActual;
     this.pacienteExistente = problema.pacienteExistente;
+    this.cancelacion = problema.cancelacion;
   }
 
   get esSesionPerdida(): boolean {
@@ -166,6 +169,13 @@ export const api = {
 
   cambiarEstadoCita: (citaId: number, accion: Accion, version: number) =>
     peticion<Cita>('POST', `/api/citas/${citaId}/estado`, { cuerpo: { accion, version } }),
+
+  /** Pública, sin sesión de recepción (003): la autoridad es el enlace del correo. Solo consulta. */
+  consultarCancelacion: (enlace: string) =>
+    peticion<Cancelacion>('GET', `/api/cancelacion/${encodeURIComponent(enlace)}`, { avisarSesionPerdida: false }),
+
+  confirmarCancelacion: (enlace: string) =>
+    peticion<Cancelacion>('POST', `/api/cancelacion/${encodeURIComponent(enlace)}`, { cuerpo: {}, avisarSesionPerdida: false }),
 };
 
 const rutaPortal = (identificador: string) => `/api/portal/${encodeURIComponent(identificador)}`;

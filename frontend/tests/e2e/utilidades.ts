@@ -16,6 +16,7 @@ export interface Cita {
   paciente: { id: number; nombre: string; telefono: string };
   servicio: { nombre: string };
   estado: string;
+  canceladaPor?: string | null;
   acciones: string[];
   version: number;
 }

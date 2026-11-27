@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { PantallaAcceso } from './acceso/PantallaAcceso';
 import { PantallaAgenda } from './agenda/PantallaAgenda';
 import { PantallaAnalitica } from './analitica/PantallaAnalitica';
+import { PantallaCancelacion } from './cancelacion/PantallaCancelacion';
 import { api, ErrorApi, EVENTO_SESION_PERDIDA, MENSAJE_ERROR_GENERICO } from './api/cliente';
 import type { Contexto } from './api/tipos';
 import { identificadorDeRuta, vistaDeRuta } from './navegacion';
@@ -22,12 +23,29 @@ export function esRutaPortal(ruta: string): boolean {
   return ruta.split('/').filter(Boolean)[1] === 'mis-citas';
 }
 
+/** `/cancelar/{enlace}` → el enlace del recordatorio (003); en otro caso, nulo. */
+export function enlaceDeCancelacion(ruta: string): string | null {
+  const [primero, enlace] = ruta.split('/').filter(Boolean);
+  if (primero !== 'cancelar' || !enlace) return null;
+  try {
+    return decodeURIComponent(enlace);
+  } catch {
+    return enlace;
+  }
+}
+
 /**
  * Raíz de la aplicación, sin enrutador ni estado global (research D15): la vista depende de la
  * sesión; el profesional y el día viven en la query string (PantallaAgenda). La dirección
  * `/{identificador}/mis-citas` monta el portal del paciente (002), con su propia sesión.
  */
 export function App() {
+  // Pantalla pública del paciente (003): no usa la sesión de recepción ni el contexto de clínica.
+  const enlace = enlaceDeCancelacion(window.location.pathname);
+  return enlace ? <PantallaCancelacion enlace={enlace} /> : <AppRecepcion />;
+}
+
+function AppRecepcion() {
   const identificador = identificadorDeRuta(window.location.pathname);
   if (identificador && esRutaPortal(window.location.pathname)) {
     return <AppPortal identificador={identificador} />;

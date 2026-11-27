@@ -29,6 +29,9 @@ export function TarjetaCita({ cita, resaltada = false, onCambioEstado }: PropsTa
         </p>
         <DistintivoEstado estado={cita.estado} />
       </div>
+      {cancelada && cita.canceladaPor === 'PACIENTE' && (
+        <p className="mt-1 text-sm font-medium">Cancelada por el paciente</p>
+      )}
       <p className={`mt-1 text-base font-semibold break-words ${atenuada ? '' : 'text-texto'} ${cancelada ? 'line-through' : ''}`}>
         {cita.paciente.nombre}
       </p>

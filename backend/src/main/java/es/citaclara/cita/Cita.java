@@ -66,6 +66,11 @@ public class Cita {
     @Column(name = "creada_en", nullable = false)
     private Instant creadaEn;
 
+    /** Solo la cancelación desde el enlace del recordatorio lo rellena (003, FR-016). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancelada_por", length = 10)
+    private CanceladaPor canceladaPor;
+
     protected Cita() {
     }
 
@@ -84,6 +89,19 @@ public class Cita {
 
     void cambiarEstado(EstadoCita nuevo) {
         this.estado = nuevo;
+    }
+
+    /**
+     * Cancelación hecha por el propio paciente desde el recordatorio (003, FR-015). La transición
+     * ya debe haberse validado con {@link MaquinaEstadosCita}.
+     */
+    public void cancelarPorPaciente() {
+        this.estado = EstadoCita.CANCELADA;
+        this.canceladaPor = CanceladaPor.PACIENTE;
+    }
+
+    public CanceladaPor getCanceladaPor() {
+        return canceladaPor;
     }
 
     public Long getId() {

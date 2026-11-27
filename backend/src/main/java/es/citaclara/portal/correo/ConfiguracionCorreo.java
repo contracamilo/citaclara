@@ -12,7 +12,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
  * Ejecutor propio del envío de enlaces (research R2). Las pruebas lo vuelven síncrono
  * ({@code citaclara.correo.asincrono=false}) para que el buzón de prueba sea determinista.
  */
-@Configuration(proxyBeanMethods = false)
+// Nombre explícito: es.citaclara.correo.ConfiguracionCorreo (003) tiene el mismo nombre simple.
+@Configuration(value = "configuracionCorreoPortal", proxyBeanMethods = false)
 @EnableAsync
 public class ConfiguracionCorreo {
 

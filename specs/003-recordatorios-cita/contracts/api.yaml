@@ -1,0 +1,135 @@
+openapi: 3.1.0
+info:
+  title: CitaClara — API pública de cancelación por el paciente (003-recordatorios-cita)
+  version: 0.1.0
+  description: |
+    Dos operaciones públicas, sin la cookie de sesión de recepción (la 001 protege el resto del API).
+    La autoridad es el enlace de cancelación del correo: 256 bits aleatorios, no adivinable (research.md D5).
+    - Mismo origen que el panel: `/api` lo redirige nginx al backend.
+    - Hora local de Madrid: fecha `YYYY-MM-DD`, hora `HH:mm` de 24 h (convención 001).
+    - Errores en Problem Details con `codigo` (para el programa) y `mensaje` (español de España, listo para mostrar).
+    - Todo POST solo en JSON (415 `TIPO_NO_ADMITIDO`), como en el resto del producto.
+    - Un enlace inexistente, manipulado o de otra clínica responde siempre lo mismo (404 `NO_ENCONTRADO`),
+      sin revelar datos de ninguna cita ni clínica (FR-018).
+servers:
+  - url: /api
+
+paths:
+  /cancelacion/{enlace}:
+    get:
+      summary: Consultar la cita de un enlace. No modifica nada, aunque se abra muchas veces (FR-012, US2-AC3)
+      operationId: consultarCancelacion
+      parameters:
+        - $ref: '#/components/parameters/Enlace'
+      responses:
+        '200':
+          description: Situación de la cita según el reloj del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cancelacion'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+    post:
+      summary: Confirmar la cancelación de la cita (US2-AC2, FR-013, FR-015)
+      operationId: confirmarCancelacion
+      description: |
+        Cancela solo si la situación es `ACTIVA` (hasta 24 h antes del inicio, incluido el límite).
+        Idempotente para el paciente: repetir la confirmación de una cita ya cancelada por él responde 200
+        `YA_CERRADA` con `canceladaPorPaciente = true` (US2-AC7). Si otra persona cambió la cita antes,
+        responde 409 con el estado real.
+      parameters:
+        - $ref: '#/components/parameters/Enlace'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+      responses:
+        '200':
+          description: Cita cancelada ahora (`situacion = YA_CERRADA`, `canceladaPorPaciente = true`) o ya cancelada antes por el propio paciente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cancelacion'
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+        '409':
+          description: |
+            La cita cambió antes (por ejemplo, la canceló la recepción). `codigo = ESTADO_YA_CAMBIADO`.
+            `mensaje = «Esta cita ya no está activa. Si tienes dudas, llama a la clínica.»`; el cuerpo
+            incluye `cancelacion` con la situación real (US2-AC4, FR-019).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problema'
+        '422':
+          description: |
+            No se puede cancelar desde el enlace: cita a menos de 24 h o ya empezada. `codigo = FUERA_DE_PLAZO`.
+            `mensaje = «Ya no puedes cancelar desde aquí. Llama a la clínica al {teléfono}.»` (US2-AC5, FR-013).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problema'
+        '415':
+          description: Cuerpo no JSON. `codigo = TIPO_NO_ADMITIDO`.
+
+components:
+  parameters:
+    Enlace:
+      name: enlace
+      in: path
+      required: true
+      description: Valor aleatorio de 43 caracteres Base64 URL del correo
+      schema: { type: string, pattern: '^[A-Za-z0-9_-]{43}$' }
+
+  responses:
+    NoEncontrado:
+      description: Enlace inexistente o manipulado. `mensaje = «No hemos encontrado lo que buscas.»`
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problema'
+
+  schemas:
+    Cancelacion:
+      type: object
+      required: [situacion, clinica, cita, canceladaPorPaciente]
+      properties:
+        situacion:
+          type: string
+          enum: [ACTIVA, FUERA_DE_PLAZO, YA_CERRADA]
+          description: |
+            ACTIVA: reservada y cancelable (hasta 24 h antes).
+            FUERA_DE_PLAZO: reservada pero a menos de 24 h o ya empezada.
+            YA_CERRADA: cancelada, completada o no asistida.
+        canceladaPorPaciente:
+          type: boolean
+          description: Verdadero si la cita figura cancelada por el propio paciente desde el enlace
+        clinica:
+          type: object
+          required: [nombre, telefono]
+          properties:
+            nombre: { type: string, example: Clínica Eleva }
+            telefono: { type: string, example: '+34 910 000 000' }
+        cita:
+          type: object
+          description: Datos mínimos. Sin importe, sin teléfono ni email del paciente, sin identificadores internos.
+          required: [fecha, horaInicio, profesional, servicio]
+          properties:
+            fecha: { type: string, format: date, example: '2026-11-30' }
+            horaInicio: { type: string, example: '10:00' }
+            profesional: { type: string, example: María }
+            servicio: { type: string, example: Sesión fisioterapia }
+
+    Problema:
+      type: object
+      required: [status, codigo, mensaje]
+      properties:
+        status: { type: integer }
+        codigo: { type: string }
+        mensaje: { type: string }
+        cancelacion:
+          $ref: '#/components/schemas/Cancelacion'
