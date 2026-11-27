@@ -73,7 +73,7 @@ public class CargadorSemilla {
         em.clear();
 
         Clinica clinica = clinicas.save(new Clinica(CatalogoDemostracion.IDENTIFICADOR, CatalogoDemostracion.NOMBRE,
-                ServicioAcceso.hash(CatalogoDemostracion.CLAVE)));
+                ServicioAcceso.hash(CatalogoDemostracion.CLAVE), CatalogoDemostracion.TELEFONO));
         for (int dia = 1; dia <= 5; dia++) {
             horarios.save(new HorarioAtencion(clinica.getId(), dia, CatalogoDemostracion.APERTURA, CatalogoDemostracion.CIERRE));
         }

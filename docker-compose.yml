@@ -16,6 +16,8 @@ x-entorno-api: &entorno-api
   SMTP_HOST: mailpit
   SMTP_PUERTO: "1025"
   URL_PUBLICA: http://localhost:${PUERTO_WEB:-8080}
+  # 003-recordatorios-cita: correo simulado (.eml en datos/salida-correo) mientras no haya CORREO_SMTP_HOST.
+  CORREO_DIRECTORIO: /app/datos/salida-correo
 
 services:
   db:
@@ -39,6 +41,8 @@ services:
     build: ./backend
     image: citaclara-api
     environment: *entorno-api
+    volumes:
+      - ./datos/salida-correo:/app/datos/salida-correo
     depends_on:
       db:
         condition: service_healthy
@@ -72,6 +76,20 @@ services:
     environment:
       <<: *entorno-api
       SPRING_PROFILES_ACTIVE: semilla
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Una ejecución del proceso diario de recordatorios y salir (003-recordatorios-cita, research D12):
+  #   docker compose run --rm recordatorios
+  recordatorios:
+    image: citaclara-api
+    profiles: ["herramientas"]
+    environment:
+      <<: *entorno-api
+      SPRING_PROFILES_ACTIVE: recordatorios
+    volumes:
+      - ./datos/salida-correo:/app/datos/salida-correo
     depends_on:
       db:
         condition: service_healthy

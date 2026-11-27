@@ -36,7 +36,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
-        <!-- 002 (FR-001, FR-007, research R2): envío SMTP del enlace de acceso al portal. -->
+        <!-- 002 (FR-001, FR-007, research R2): envío SMTP del enlace de acceso al portal.
+             003 (research D2): correo MIME en UTF-8 de los recordatorios y paso a SMTP real por configuración. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>

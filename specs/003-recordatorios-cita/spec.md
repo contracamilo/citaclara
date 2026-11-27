@@ -4,7 +4,9 @@
 
 **Creada**: 27/11/2026
 
-**Estado**: Borrador (clarificada; pendiente de aprobación)
+**Estado**: Implementada
+
+**Excluidos de la trazabilidad**: SC-007 (resultado de negocio del cliente piloto que se mide fuera del producto)
 
 **Propietario**: feature 003-recordatorios-cita (registrado en `specs/MAPA.md`)
 
@@ -72,6 +74,7 @@ Cuando una cita cambia de hora o de profesional, el paciente no debe quedarse co
 ### Casos límite
 
 - **Cita creada con menos de 24 h de antelación**: no recibe recordatorio (el paciente acaba de acordarla con la clínica); comportamiento esperado.
+- **Cita reservada después de la ejecución diaria y que ya queda a menos de 24 h de la siguiente**: por ejemplo, reservada a las 10:00 para el día siguiente a las 12:00 (con ejecución a las 09:00). Nunca entra en la ventana, así que no recibe recordatorio; es coherente con «nunca menos de 24 h» y con que el paciente acaba de acordarla con la clínica. Limitación aceptada de v1 (descubierta al planificar).
 - **Cita que empieza en menos de 24 h**: ni recibe recordatorio ni se puede cancelar desde el email; el paciente debe llamar a la clínica.
 - **Cita en la franja de cambio de horario (verano/invierno)**: la ventana se calcula en horas reales y la hora que ve el paciente es siempre la hora peninsular española correcta; ninguna cita se duplica ni se omite por el cambio.
 - **Proceso que falla a mitad**: al relanzarlo, solo se generan los recordatorios que faltaban; los ya generados no se repiten y los que faltaban no se pierden.
@@ -88,7 +91,7 @@ Cuando una cita cambia de hora o de profesional, el paciente no debe quedarse co
 **Generación de recordatorios**
 
 - **FR-001**: El sistema DEBE ejecutar un proceso diario que genera un recordatorio por email para cada cita reservada cuyo inicio cae dentro de la ventana de antelación definida en FR-002.
-- **FR-002**: La antelación del recordatorio es de 24 horas (decisión de Sara, 27/11/2026). Como el proceso es diario, en cada ejecución a las 24 h de antelación se recuerda a las citas cuyo inicio cae a partir de 24 h y antes de 48 h desde ese instante, de modo que cada cita entra en la ventana una sola vez y nunca se recuerda con menos de 24 h de antelación.
+- **FR-002**: La antelación del recordatorio es de 24 horas (decisión de Sara, 27/11/2026). Como el proceso es diario, cada ejecución recuerda a las citas cuyo inicio cae desde 24 h después de la ejecución hasta 24 h después de la ejecución del día siguiente (a la misma hora local): las ventanas de días consecutivos encajan sin huecos ni solapes, incluso los días de cambio de horario, de modo que cada cita entra en la ventana una sola vez y nunca se recuerda con menos de 24 h de antelación.
 - **FR-003**: El sistema NO DEBE generar recordatorio para citas completadas, canceladas o no asistidas, ni para citas reservadas fuera de la ventana.
 - **FR-004**: El sistema NO DEBE generar más de un recordatorio por cita en la misma vida de la cita, ni siquiera si el proceso se ejecuta varias veces, se relanza tras un fallo o coincide con otra ejecución simultánea. Una cita nueva que sustituye a otra es una cita distinta y tiene su propio recordatorio (FR-014).
 - **FR-005**: El sistema DEBE registrar, por cada recordatorio, a qué cita corresponde, cuándo se generó y a qué dirección, para poder comprobar que no hay duplicados y qué se envió.
@@ -156,7 +159,7 @@ Cuando una cita cambia de hora o de profesional, el paciente no debe quedarse co
 - El email del paciente ya es un dato opcional de la ficha (spec 001, FR-019); esta feature no cambia la ficha ni obliga a introducirlo.
 - Hoy no existe «mover una cita»: se cancela y se crea otra (spec 001, «Sin mover ni reactivar citas»). Si una feature futura añade el movimiento directo, el reenvío se rige por FR-014.
 - Cancelar desde el email es más restrictivo que desde recepción: el paciente cancela hasta 24 h antes (FR-013), mientras que la recepción sigue pudiendo cancelar hasta el inicio (spec 001); esta feature no cambia esa regla.
-- Con un proceso diario, «24 h de antelación» se aplica como ventana [24 h, 48 h) desde la ejecución (FR-002); la hora de ejecución se fija en el plan.
+- Con un proceso diario, «24 h de antelación» se aplica como ventana [24 h, 24 h + un día local) desde la ejecución (FR-002); la hora de ejecución (09:00, hora peninsular) se fija en el plan.
 - El paciente no tiene acceso al producto más allá del enlace de su cita. Un portal del paciente más amplio (otra feature) queda fuera de esta spec; si coincide con ella en la cancelación, los propietarios de ambas specs lo resuelven en las specs antes que en el código.
 - Esta feature solo lee citas, pacientes y clínicas y las cancela como lo haría recepción; no cambia el comportamiento definido en la spec 001. Si necesita datos de demostración nuevos (p. ej. pacientes con email), lo solicita al propietario de la spec 001.
 - El modo simulado de correo es el único modo que se entrega y se prueba en esta feature; el envío real queda condicionado a configurar un servidor de correo y sus credenciales, sin pruebas contra servicios externos reales.

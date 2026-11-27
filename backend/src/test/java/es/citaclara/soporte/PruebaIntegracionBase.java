@@ -6,7 +6,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import tools.jackson.databind.json.JsonMapper;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Base de las pruebas de integración: aplicación completa en un puerto aleatorio contra
@@ -17,6 +24,24 @@ import tools.jackson.databind.json.JsonMapper;
         properties = "citaclara.correo.asincrono=false") // 002: envío del enlace determinista en pruebas
 @Import(ConfiguracionPruebas.class)
 public abstract class PruebaIntegracionBase {
+
+    /** Carpeta de correo simulado de toda la suite (un solo contexto de Spring; 003, FR-020). */
+    protected static final Path DIRECTORIO_CORREO = crearDirectorioCorreo();
+
+    private static Path crearDirectorioCorreo() {
+        try {
+            return Files.createTempDirectory("salida-correo-");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @DynamicPropertySource
+    static void propiedadesComunes(DynamicPropertyRegistry registro) {
+        registro.add("citaclara.correo.directorio", DIRECTORIO_CORREO::toString);
+        // El proceso diario solo se ejecuta a mano en las pruebas, con el reloj controlable.
+        registro.add("citaclara.recordatorios.programador", () -> "false");
+    }
 
     @Autowired
     protected JdbcTemplate jdbc;

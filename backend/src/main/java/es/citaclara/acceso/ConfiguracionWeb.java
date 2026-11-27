@@ -29,7 +29,9 @@ public class ConfiguracionWeb implements WebMvcConfigurer {
         registro.addInterceptor(new SoloJson()).addPathPatterns("/api/**").order(0);
         registro.addInterceptor(interceptorSesion)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/clinicas/**", "/api/portal/**")
+                // /api/cancelacion/** es público: su autoridad es el enlace del recordatorio (003, research D6;
+                // excepción acotada a FR-001 de la 001, petición 3 de specs/003-recordatorios-cita/plan.md).
+                .excludePathPatterns("/api/clinicas/**", "/api/portal/**", "/api/cancelacion/**")
                 .order(1);
         // Portal del paciente (002, FR-029, research R4): sesión propia; la del panel no lo abre ni al revés.
         registro.addInterceptor(interceptorPortal)

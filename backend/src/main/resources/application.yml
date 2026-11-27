@@ -43,10 +43,23 @@ logging:
     "[org.hibernate.engine.jdbc.spi.SqlExceptionHelper]": "OFF"
 
 citaclara:
-  # 002, research R2 y R13: remitente de los correos y URL pública de los enlaces de acceso
-  # (nunca se toma de la cabecera Host).
+  # 002, research R2 y R13: remitente de los correos del portal y URL pública de los enlaces (portal y
+  # recordatorios de la 003); nunca se toma de la cabecera Host.
   email-remitente: ${EMAIL_REMITENTE:citas@citaclara.local}
   url-publica: ${URL_PUBLICA:http://localhost:8080}
+  # 003-recordatorios-cita (contracts/correo.md): proceso diario y correo simulado por defecto.
+  recordatorios:
+    cron: ${RECORDATORIOS_CRON:0 0 9 * * *}
+    programador: true
+  correo:
+    directorio: ${CORREO_DIRECTORIO:datos/salida-correo}
+    remitente: ${CORREO_REMITENTE:no-responder@citaclara.es}
+    # Con servidor SMTP se envía de verdad; sin él, cada correo se guarda como .eml (003, FR-020, FR-021).
+    # Es independiente del SMTP del portal (spring.mail.*, 002).
+    smtp-host: ${CORREO_SMTP_HOST:}
+    smtp-puerto: ${CORREO_SMTP_PUERTO:587}
+    smtp-usuario: ${CORREO_SMTP_USUARIO:}
+    smtp-clave: ${CORREO_SMTP_CLAVE:}
 
 management:
   endpoints:
@@ -61,6 +74,20 @@ spring:
       on-profile: semilla
   main:
     web-application-type: none
+citaclara:
+  recordatorios:
+    programador: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: recordatorios
+  main:
+    web-application-type: none
+citaclara:
+  recordatorios:
+    programador: false
 
 ---
 # Spec 005 (H-05, H-06): sin valores por defecto de desarrollo; ValidacionProduccion los comprueba.

@@ -8,6 +8,8 @@ public final class CatalogoDemostracion {
 
     public static final String IDENTIFICADOR = "eleva";
     public static final String NOMBRE = "Clínica Eleva";
+    /** Teléfono ficticio de la clínica de demostración (003-recordatorios-cita, FR-009). */
+    public static final String TELEFONO = "+34 910 000 000";
     /** Clave de demostración documentada; pública por diseño (research D16). */
     public static final String CLAVE = "eleva-demo-2026";
     public static final LocalTime APERTURA = LocalTime.of(9, 0);

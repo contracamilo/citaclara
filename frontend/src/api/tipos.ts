@@ -60,6 +60,8 @@ export interface Cita {
   estado: Estado;
   acciones: Accion[];
   version: number;
+  /** Solo «PACIENTE» cuando canceló el propio paciente desde el recordatorio (003, FR-016). */
+  canceladaPor?: 'PACIENTE' | null;
 }
 
 export interface Hueco {
@@ -107,6 +109,18 @@ export interface Problema {
   citaConflictiva?: Cita;
   citaActual?: Cita;
   pacienteExistente?: Paciente;
+  /** Situación real de la cita en las respuestas 409 y 422 de la cancelación por el paciente (003). */
+  cancelacion?: Cancelacion;
+}
+
+/** Esquema `Cancelacion` de specs/003-recordatorios-cita/contracts/api.yaml. */
+export type SituacionCancelacion = 'ACTIVA' | 'FUERA_DE_PLAZO' | 'YA_CERRADA';
+
+export interface Cancelacion {
+  situacion: SituacionCancelacion;
+  canceladaPorPaciente: boolean;
+  clinica: { nombre: string; telefono: string };
+  cita: { fecha: FechaLocal; horaInicio: HoraLocal; profesional: string; servicio: string };
 }
 
 /* ---------------------------------------------------------------------------------------------
