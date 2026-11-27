@@ -59,7 +59,7 @@ Resuelve las incógnitas del plan. Cada decisión: qué, por qué y alternativas
 
 ## D7. Limitación de intentos de acceso (A07)
 
-- **Decisión**: contador de intentos fallidos **en PostgreSQL** por pareja (clínica, origen) y por clínica, con bloqueo temporal creciente y respuesta `429` con tiempo de espera en el mensaje; el registro de intentos se purga solo (ventana de 24 h). Una clave correcta no queda bloqueada por intentos de otro origen salvo bloqueo global de la clínica.
+- **Decisión**: contador de intentos fallidos **en PostgreSQL** por pareja (clínica, origen) y por clínica, con bloqueo temporal creciente (3 fallos seguidos → 5 min y duplicación hasta 60 min por origen; 15 fallos en 15 min desde cualquier origen → 15 min de bloqueo de la clínica, FR-022 de la spec 005) y respuesta `429` con tiempo de espera en el mensaje; el registro de intentos se purga solo (ventana de 24 h). Una clave correcta no queda bloqueada por intentos de otro origen salvo bloqueo global de la clínica.
 - **Por qué**: PostgreSQL ya está en el entorno y el estado debe sobrevivir a reinicios y a varias instancias; no añade dependencia (Principio IV). La clínica sigue entrando sin formación con un mensaje claro (Principio VII).
 - **Complemento en nginx**: `limit_req` sobre la ruta de acceso como defensa barata antes de llegar al backend.
 - **Alternativas descartadas**: Bucket4j o Resilience4j (dependencia nueva para un solo endpoint); contador en memoria (se pierde al reiniciar y no escala a dos instancias).

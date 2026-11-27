@@ -4,7 +4,7 @@
 
 **Creada**: 27/11/2026
 
-**Estado**: Borrador (pendiente de aprobación de su propietario)
+**Estado**: Aprobada (27/11/2026, al iniciar la implementación)
 
 **Propietario**: feature 005-security-audit (registrado en `specs/MAPA.md`)
 
@@ -19,6 +19,11 @@
 - Q: ¿Cuánto tiempo debe conservarse un dato de paciente tras su última cita? → A: 5 años desde la última cita y después anonimizar.
 - Q: Si la clave compartida por clínica resulta un riesgo alto, ¿se corrige en esta feature o se deriva a la spec 001? → A: Se corrige en esta feature introduciendo usuarios individuales, lo que modifica la spec 001 con la aprobación previa de su propietario.
 - Q: Si la auditoría confirma que la falta de límite de intentos de acceso es un riesgo alto, ¿debe corregirse en esta feature (con la aprobación del propietario de la 001) o solo derivarse como solicitud a la 001? → A: Se corrige en esta feature, con la aprobación previa del propietario de la 001, igual que los usuarios individuales (FR-022).
+
+### Sesión 2026-11-27 (revisión tras el análisis)
+
+- Q: ¿Debe bloquearse también el acceso a toda la clínica cuando se acumulan muchos intentos fallidos desde cualquier origen, o solo al origen que falla? → A: Bloqueo por origen y también de toda la clínica al superar un umbral global de fallos, con desbloqueo automático; las sesiones ya abiertas no se ven afectadas.
+- Q: ¿Cuántos fallos de clave seguidos desde un mismo origen deben provocar el primer bloqueo, y cuánto debe durar, con qué máximo? → A: Origen: 3 fallos seguidos → 5 minutos, y cada nuevo fallo tras el bloqueo duplica la espera hasta un máximo de 60 minutos. Clínica: 15 fallos entre todos los orígenes en 15 minutos → 15 minutos de bloqueo.
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
@@ -109,7 +114,7 @@ El equipo necesita que lo auditado no se degrade. Se proponen controles automát
 - ¿Qué pasa con hallazgos que afectan a los datos de demostración? Los datos ficticios no cuentan como datos reales, pero la clave de demostración publicada no debe poder usarse en un entorno real.
 - ¿Qué pasa con hallazgos en dependencias de terceros sin parche disponible? Se registran con mitigación y fecha de revisión.
 - ¿Qué pasa si una mejora reduce la facilidad de uso de recepción? Se anota el impacto y se exige que los mensajes sigan sin jerga técnica (Principio VII).
-- ¿Qué pasa si una recepcionista legítima falla la clave varias veces? Ve un mensaje claro que indica cuánto esperar, sin términos técnicos, y recupera el acceso al terminar el bloqueo sin intervención de nadie.
+- ¿Qué pasa si una recepcionista legítima falla la clave varias veces? Ve un mensaje claro que indica cuánto esperar, sin términos técnicos, y recupera el acceso al terminar el bloqueo sin intervención de nadie. Si el bloqueo es de toda la clínica por un ataque externo, el personal con sesión abierta sigue trabajando y quien no la tenga espera al fin del plazo, que consta en el mensaje; el bloqueo de clínica genera un evento de seguridad visible en los registros.
 
 ## Requisitos *(obligatorio)*
 
@@ -136,7 +141,7 @@ El equipo necesita que lo auditado no se degrade. Se proponen controles automát
 - **FR-019**: La auditoría NO DEBE realizar pruebas intrusivas contra entornos con datos reales ni contra servicios de terceros; se ejecuta sobre entornos locales o de demostración.
 - **FR-020**: Esta feature DEBE corregir los hallazgos de severidad crítica y alta cuya corrección no cambie el comportamiento definido en specs ajenas, salvo lo previsto en FR-021 y FR-022; cada corrección DEBE ir acompañada de una prueba que reproduzca el hallazgo y compruebe que ya no ocurre. Los hallazgos medios y bajos, y los críticos o altos que sí afecten a specs ajenas, quedan en el plan de seguimiento.
 - **FR-021**: Si la auditoría califica de alto o crítico el acceso mediante una clave compartida por clínica, esta feature DEBE sustituirlo por acceso con usuarios individuales por clínica, de forma que cada acceso a datos de pacientes y cada operación quede atribuida a una persona concreta y pueda revocarse sin afectar al resto. Al ser un cambio de comportamiento de la spec 001, requiere la aprobación previa de su propietario y su actualización (Principio I) antes de implementarse; el acceso de recepción debe seguir siendo usable sin formación (Principio VII).
-- **FR-022**: Si la auditoría califica de alto o crítico que el acceso no limite los intentos fallidos, esta feature DEBE limitarlos con un bloqueo temporal creciente por origen y por clínica; durante el bloqueo tampoco se acepta una clave correcta desde ese origen, y la persona ve cuánto debe esperar. Cambia el comportamiento que la spec 001 declara como deuda consciente (sin límite de intentos), por lo que requiere la misma aprobación previa de su propietario y la actualización de su spec antes de implementarse.
+- **FR-022**: Si la auditoría califica de alto o crítico que el acceso no limite los intentos fallidos, esta feature DEBE limitarlos con un bloqueo temporal creciente por origen y, además, con un bloqueo de toda la clínica; ambos se levantan solos al terminar su plazo. Por origen: 3 fallos seguidos (sin un acceso correcto entre medias) bloquean 5 minutos y cada nuevo fallo tras el bloqueo duplica la espera (5, 10, 20, 40 y 60 minutos, que es el máximo); un acceso correcto o 24 horas sin fallos reinician la cuenta. Por clínica: 15 fallos desde cualquier origen dentro de 15 minutos bloquean los accesos 15 minutos. Durante un bloqueo tampoco se acepta una clave correcta (desde ese origen o, si es de clínica, desde cualquiera); las sesiones ya abiertas no se ven afectadas; y la persona ve cuánto debe esperar. Cambia el comportamiento que la spec 001 declara como deuda consciente (sin límite de intentos), por lo que requiere la misma aprobación previa de su propietario y la actualización de su spec antes de implementarse.
 
 ### Entidades clave *(incluir si la feature maneja datos)*
 
