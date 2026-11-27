@@ -59,6 +59,16 @@ public class ClienteApi {
                 .build());
     }
 
+    /** 002: pide el enlace de acceso al portal. */
+    public Respuesta pedirEnlace(String identificador, String email) {
+        return post("/api/portal/" + identificador + "/enlaces", java.util.Map.of("email", email));
+    }
+
+    /** 002: abre la sesión del portal con el secreto del enlace. */
+    public Respuesta abrirSesionPortal(String identificador, String secreto) {
+        return post("/api/portal/" + identificador + "/sesion", java.util.Map.of("enlace", secreto));
+    }
+
     private HttpRequest.Builder peticion(String ruta) {
         return HttpRequest.newBuilder(URI.create("http://localhost:" + puerto + ruta))
                 .timeout(Duration.ofSeconds(30))

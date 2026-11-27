@@ -17,6 +17,17 @@ public interface RepositorioCita extends JpaRepository<Cita, Long> {
             """)
     Optional<Cita> buscar(@Param("id") Long id, @Param("clinicaId") Long clinicaId);
 
+    /**
+     * 002 (portal del paciente, FR-028): citas de las fichas de la clínica cuyo email normalizado
+     * coincide con el de la sesión del portal. Solo lectura.
+     */
+    @Query("""
+            select c from Cita c join fetch c.profesional join fetch c.servicio join fetch c.paciente p
+            where c.clinicaId = :clinicaId and p.email is not null and lower(trim(p.email)) = :email
+            order by c.inicio, c.id
+            """)
+    List<Cita> delPortal(@Param("clinicaId") Long clinicaId, @Param("email") String email);
+
     /** Citas de un profesional cuyo inicio cae en [desde, hasta), en cualquier estado. */
     @Query("""
             select c from Cita c join fetch c.profesional join fetch c.servicio join fetch c.paciente

@@ -159,3 +159,49 @@ export interface Analitica {
   ingresos: { servicios: ServicioIngresos[]; totalCentimos: number; totalNoObtenidoCentimos: number };
   evolucion: SemanaEvolucion[];
 }
+
+// ── Portal del paciente y aviso de cancelaciones (002, contracts/api.yaml) ──
+
+/** Estado de una cita tal como la ve el paciente (data-model «Vista de cita en el portal»). */
+export type EstadoPortal = 'RESERVADA' | 'PENDIENTE_CIERRE' | 'REALIZADA' | 'NO_ACUDISTE' | 'CANCELADA';
+
+export interface CitaPortal {
+  id: number;
+  version: number;
+  paciente: string;
+  fecha: FechaLocal;
+  horaInicio: HoraLocal;
+  horaFin: HoraLocal;
+  profesional: string;
+  servicio: string;
+  importeCentimos: number;
+  estadoPortal: EstadoPortal;
+  cancelable: boolean;
+  /** Mensaje listo para mostrar si está reservada pero no se puede cancelar. */
+  motivoNoCancelable?: string | null;
+}
+
+export interface MisCitas {
+  clinicaNombre: string;
+  pacientes: string[];
+  proximas: CitaPortal[];
+  pasadas: CitaPortal[];
+}
+
+export interface CancelacionPortal {
+  citaId: number;
+  paciente: string;
+  profesional: string;
+  fecha: FechaLocal;
+  horaInicio: HoraLocal;
+  horaFin: HoraLocal;
+  servicio: string;
+  canceladaFecha: FechaLocal;
+  canceladaHora: HoraLocal;
+  huecoPasado: boolean;
+}
+
+export interface CancelacionesPortal {
+  pendientes: number;
+  cancelaciones: CancelacionPortal[];
+}

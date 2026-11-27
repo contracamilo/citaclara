@@ -5,6 +5,7 @@ Fuente de verdad sobre qué specs existen y quién es su propietario único (con
 | Spec | Ámbito | Propietario | Estado |
 |------|--------|-------------|--------|
 | [001-nucleo-agenda](001-nucleo-agenda/spec.md) | Clínica, profesionales, servicios, pacientes, citas, agenda del día de recepción, reglas de solape (RN1) y no-pasado (RN2), datos de demostración | Feature 001-nucleo-agenda | Implementada |
+| [002-portal-paciente](002-portal-paciente/spec.md) | Portal del paciente: acceso por enlace de un solo uso al email de la ficha, consulta de citas futuras y pasadas, cancelación hasta 24 h antes y aviso en recepción de las cancelaciones del portal | Feature 002-portal-paciente | Implementada (pendiente T053: acuerdo con el propietario de 001 sobre el aviso en la cabecera del panel) |
 | [004-panel-analitica](004-panel-analitica/spec.md) | Página de analítica de solo lectura: ocupación semanal y tasa de no asistencia por profesional, ingresos por servicio y evolución de 8 semanas | Feature 004-panel-analitica | Implementada |
 | [005-security-audit](005-security-audit/spec.md) | Auditoría de seguridad (OWASP Top 10, preparación Stripe/PCI, datos de pacientes), informe y plan de mejoras | Feature 005-security-audit | Implementada con solicitudes pendientes |
 

@@ -2,6 +2,7 @@ package es.citaclara.acceso;
 
 import es.citaclara.comun.errores.ErrorNegocio;
 import es.citaclara.comun.errores.Mensajes;
+import es.citaclara.portal.acceso.InterceptorPortal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Configuration;
@@ -15,9 +16,11 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class ConfiguracionWeb implements WebMvcConfigurer {
 
     private final InterceptorSesion interceptorSesion;
+    private final InterceptorPortal interceptorPortal;
 
-    public ConfiguracionWeb(InterceptorSesion interceptorSesion) {
+    public ConfiguracionWeb(InterceptorSesion interceptorSesion, InterceptorPortal interceptorPortal) {
         this.interceptorSesion = interceptorSesion;
+        this.interceptorPortal = interceptorPortal;
     }
 
     @Override
@@ -26,7 +29,12 @@ public class ConfiguracionWeb implements WebMvcConfigurer {
         registro.addInterceptor(new SoloJson()).addPathPatterns("/api/**").order(0);
         registro.addInterceptor(interceptorSesion)
                 .addPathPatterns("/api/**")
-                .excludePathPatterns("/api/clinicas/**")
+                .excludePathPatterns("/api/clinicas/**", "/api/portal/**")
+                .order(1);
+        // Portal del paciente (002, FR-029, research R4): sesión propia; la del panel no lo abre ni al revés.
+        registro.addInterceptor(interceptorPortal)
+                .addPathPatterns("/api/portal/**")
+                .excludePathPatterns("/api/portal/*/enlaces", "/api/portal/*/sesion")
                 .order(1);
     }
 

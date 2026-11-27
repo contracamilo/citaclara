@@ -1,6 +1,8 @@
 # CitaClara — entorno completo (research D16).
 #   docker compose up -d --build        → db, api y web (http://localhost:8080, o $PUERTO_WEB)
 #   docker compose run --rm semilla     → carga los datos de demostración de Clínica Eleva
+#   Portal del paciente: http://localhost:8080/eleva/mis-citas; los enlaces de acceso llegan a la
+#   bandeja de Mailpit (http://localhost:8025), que captura todo el correo sin entregarlo (002, FR-031).
 name: citaclara
 
 # SOLO DESARROLLO: las credenciales de este fichero son públicas. Para producción, docker-compose.produccion.yml.
@@ -10,6 +12,10 @@ x-entorno-api: &entorno-api
   DB_USUARIO: citaclara
   DB_CLAVE: citaclara
   COOKIE_SEGURA: "false"
+  # Portal del paciente (002, research R2 y R13): SMTP de Mailpit y URL de los enlaces de acceso.
+  SMTP_HOST: mailpit
+  SMTP_PUERTO: "1025"
+  URL_PUBLICA: http://localhost:${PUERTO_WEB:-8080}
 
 services:
   db:
@@ -36,6 +42,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
       interval: 5s
@@ -51,6 +59,12 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+  mailpit:
+    # Solo demostración y e2e: captura el SMTP y nunca entrega correo real (002, FR-031).
+    image: axllent/mailpit:v1.33.1
+    ports:
+      - "127.0.0.1:${PUERTO_CORREO:-8025}:8025"   # bandeja web y API de Mailpit
 
   semilla:
     image: citaclara-api

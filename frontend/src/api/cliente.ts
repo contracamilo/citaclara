@@ -1,4 +1,16 @@
-import type { Accion, Agenda, Analitica, Cita, Contexto, NuevaCita, Paciente, Problema } from './tipos';
+import type {
+  Accion,
+  Agenda,
+  Analitica,
+  CancelacionesPortal,
+  Cita,
+  CitaPortal,
+  Contexto,
+  MisCitas,
+  NuevaCita,
+  Paciente,
+  Problema,
+} from './tipos';
 
 /** Evento global que se emite cuando cualquier llamada recibe 401 SIN_SESION o SESION_CADUCADA. */
 export const EVENTO_SESION_PERDIDA = 'sesion-perdida';
@@ -11,6 +23,13 @@ export const MENSAJE_DEMASIADAS_PETICIONES = 'Has probado demasiadas veces. Espe
 export const MENSAJE_DEMASIADO_GRANDE = 'Lo que intentas enviar es demasiado grande. Acórtalo e inténtalo de nuevo.';
 
 const CODIGOS_SESION_PERDIDA = new Set(['SIN_SESION', 'SESION_CADUCADA']);
+
+/**
+ * Evento del portal del paciente (002): 401 SIN_SESION_PORTAL o SESION_PORTAL_CADUCADA. Es distinto del
+ * evento del panel para que una sesión del portal nunca lleve a la pantalla de la clave (FR-029).
+ */
+export const EVENTO_SESION_PORTAL_PERDIDA = 'sesion-portal-perdida';
+const CODIGOS_SESION_PORTAL_PERDIDA = new Set(['SIN_SESION_PORTAL', 'SESION_PORTAL_CADUCADA']);
 
 export interface DetalleSesionPerdida {
   codigo: string;
@@ -43,6 +62,10 @@ export class ErrorApi extends Error implements Problema {
 
   get esSesionPerdida(): boolean {
     return this.estadoHttp === 401 && CODIGOS_SESION_PERDIDA.has(this.codigo);
+  }
+
+  get esSesionPortalPerdida(): boolean {
+    return this.estadoHttp === 401 && CODIGOS_SESION_PORTAL_PERDIDA.has(this.codigo);
   }
 }
 
@@ -100,6 +123,13 @@ async function peticion<T>(metodo: string, ruta: string, opciones: OpcionesPetic
         }),
       );
     }
+    if (error.esSesionPortalPerdida && avisarSesionPerdida) {
+      window.dispatchEvent(
+        new CustomEvent<DetalleSesionPerdida>(EVENTO_SESION_PORTAL_PERDIDA, {
+          detail: { codigo: error.codigo, mensaje: error.mensaje },
+        }),
+      );
+    }
     throw error;
   }
 
@@ -136,6 +166,34 @@ export const api = {
 
   cambiarEstadoCita: (citaId: number, accion: Accion, version: number) =>
     peticion<Cita>('POST', `/api/citas/${citaId}/estado`, { cuerpo: { accion, version } }),
+};
+
+const rutaPortal = (identificador: string) => `/api/portal/${encodeURIComponent(identificador)}`;
+
+/** Portal del paciente (002, contracts/api.yaml). */
+export const apiPortal = {
+  pedirEnlace: (identificador: string, email: string) =>
+    peticion<void>('POST', `${rutaPortal(identificador)}/enlaces`, { cuerpo: { email } }),
+
+  abrirSesion: (identificador: string, enlace: string) =>
+    peticion<void>('POST', `${rutaPortal(identificador)}/sesion`, { cuerpo: { enlace } }),
+
+  cerrarSesion: () => peticion<void>('DELETE', '/api/portal/sesion'),
+
+  /** Con `avisarSesionPerdida: false`, un 401 no emite el evento (carga inicial del portal). */
+  obtenerMisCitas: (opciones: { avisarSesionPerdida?: boolean } = {}) =>
+    peticion<MisCitas>('GET', '/api/portal/citas', opciones),
+
+  cancelarCita: (citaId: number, version: number) =>
+    peticion<CitaPortal>('POST', `/api/portal/citas/${citaId}/cancelacion`, { cuerpo: { version } }),
+};
+
+/** Aviso de cancelaciones del portal en el panel de recepción (002, US4). */
+export const apiCancelaciones = {
+  obtener: (senal?: AbortSignal) => peticion<CancelacionesPortal>('GET', '/api/cancelaciones-portal', { senal }),
+
+  marcarRevisada: (citaId: number) =>
+    peticion<void>('POST', `/api/cancelaciones-portal/${citaId}/revision`, { cuerpo: {} }),
 };
 
 export function esErrorAbort(e: unknown): boolean {

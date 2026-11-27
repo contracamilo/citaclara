@@ -21,6 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: ./scripts/trazabilidad.sh
+      - run: ./scripts/trazabilidad.sh specs/002-portal-paciente
       - run: ./scripts/trazabilidad.sh specs/004-panel-analitica
 
   seguridad:
@@ -109,6 +110,7 @@ jobs:
         working-directory: frontend
         env:
           URL_BASE: http://localhost:8080
+          URL_CORREO: http://localhost:8025
         run: npm run e2e
       - name: Registros del entorno
         if: failure()

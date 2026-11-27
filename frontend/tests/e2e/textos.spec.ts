@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ApiPrueba, abrirAgenda, diaLaborable, dialogoAlta, elegirPaciente, entrar, textoVisible } from './utilidades';
+import { ApiPrueba, abrirAgenda, diaLaborable, dialogoAlta, elegirPaciente, entrar, pedirEnlace, textoVisible, ultimoEnlace, vaciarCorreo } from './utilidades';
 
 // FR-027 / FR-026: recorrido por acceso, agenda, alta con un rechazo y acciones, comprobando que
 // ningún texto visible contiene códigos, identificadores ni jerga, y que los formatos son españoles.
@@ -57,4 +57,29 @@ test('[001][FR-027][FR-026][FR-017] ningún texto visible contiene códigos ni j
   await dialogoAlta(page).getByRole('button', { name: 'Reservar cita' }).click();
   await expect(dialogoAlta(page).getByText('No se pueden crear citas en el pasado. Elige una hora posterior.')).toBeVisible();
   await sinJerga(page);
+});
+
+// 002 (FR-025): códigos propios del portal que nunca pueden verse.
+const PROHIBIDO_PORTAL = /\b(ENLACE_NO_VALIDO|ENLACES_AGOTADOS|EMAIL_NO_VALIDO|SIN_SESION_PORTAL|SESION_PORTAL_CADUCADA|FUERA_DE_PLAZO|PENDIENTE_CIERRE|NO_ACUDISTE|REALIZADA|estadoPortal|citaId)\b/;
+
+test('[002][FR-025] el portal no muestra códigos, identificadores ni jerga y usa los formatos españoles', async ({ page }) => {
+  const email = 'gonzalo.cruz@ejemplo.es';
+  await page.goto('/eleva/mis-citas');
+  await page.getByLabel('Tu email').fill('gonzalo');
+  await page.getByRole('button', { name: 'Enviarme el enlace' }).click();
+  await expect(page.getByText('Escribe un email válido, por ejemplo nombre@correo.es.')).toBeVisible();
+  await sinJerga(page);
+
+  await vaciarCorreo(email);
+  await pedirEnlace(page, email);
+  await sinJerga(page);
+
+  await page.goto(await ultimoEnlace(email));
+  await expect(page.getByRole('heading', { name: 'Próximas citas' })).toBeVisible();
+  await sinJerga(page);
+  const texto = await textoVisible(page);
+  expect(texto.match(PROHIBIDO_PORTAL)?.[0]).toBeUndefined();
+  expect(texto).toMatch(/\d{2}\/\d{2}\/\d{4}/);
+  expect(texto).toMatch(/\d+,\d{2}\s€/);
+  expect(texto).toMatch(/\d{2}:\d{2}–\d{2}:\d{2}/);
 });
