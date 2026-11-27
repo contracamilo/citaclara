@@ -94,3 +94,7 @@ La guarda de 001 (`ahora < inicio`) queda implícita. Recepción mantiene su reg
 4. La versión coincide con la que vio el paciente y el estado es `RESERVADA`, si no 409 `ESTADO_YA_CAMBIADO` con la cita real.
 5. Dentro de plazo (`ahora < inicio − 24 h`), si no 422 `FUERA_DE_PLAZO`.
 6. Transición de la máquina de estados de 001, más `INSERT cancelacion_portal` y `saveAndFlush`. Si salta el bloqueo optimista, se responde 409 `ESTADO_YA_CAMBIADO` releyendo la cita.
+
+En los dos casos de 409 (pasos 4 y 6), el mensaje es el del portal («Esta cita acaba de cambiar. Revisa su estado.») y `citaActual` va en formato `CitaPortal`; nunca el mensaje ni el formato del panel de recepción.
+
+Nombres: la spec llama «Enlace de acceso» a lo que aquí es una `SolicitudEnlacePortal` con `token_hash`.

@@ -143,12 +143,15 @@ frontend/
 
 **Decisión de estructura**: se sigue la organización por capacidad de dominio de 001. Todo lo nuevo vive en `portal` (backend) y en `portal/` y `cancelaciones/` (frontend), para no chocar con features paralelas.
 
-**Puntos de contacto con código de 001**: son cinco y ninguno cambia el comportamiento de 001.
+**Puntos de contacto con código de 001**: ninguno cambia el comportamiento de 001.
 1. `ConfiguracionWeb`: excluir `/api/portal/**` del interceptor del panel y registrar `InterceptorPortal`.
-2. `ServicioEstadoCita`: añadir una operación pública que reutiliza la misma transición.
-3. `App.tsx`: despachar `mis-citas`.
-4. `PantallaAgenda`: montar el aviso en la cabecera.
-5. `ServicioAcceso.iniciarSesion`: ya invalida la sesión previa, así que no cambia.
+2. `ServicioEstadoCita`: añadir una operación pública que reutiliza la misma transición; el error de conflicto lo construye el portal.
+3. `RepositorioCita`: una consulta de lectura de las citas por email; `RepositorioClinica`: `bloquear(id)` si no existe.
+4. `Mensajes`: textos nuevos del portal.
+5. `App.tsx`, `api/cliente.ts` y `api/tipos.ts`: despachar `mis-citas` y llamadas del portal.
+6. `PantallaAgenda`: montar el aviso en la cabecera.
+7. Ayudas de prueba (`PruebaIntegracionBase`, `ConfiguracionPruebas`, `ClienteApi`, `DatosPrueba`, `utilidades.ts`, `textos.spec.ts`).
+8. `ServicioAcceso.iniciarSesion`: ya invalida la sesión previa, así que no cambia.
 
 ## Fases de implementación (guía para `/speckit-tasks`)
 

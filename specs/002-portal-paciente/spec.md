@@ -4,7 +4,7 @@
 
 **Creada**: 27/11/2026
 
-**Estado**: Borrador (decisiones de producto cerradas por Sara el 27/11/2026)
+**Estado**: Aprobada (27/11/2026, por el propietario de la feature 002; decisiones de producto cerradas por Sara el mismo día)
 
 **Propietario**: feature 002-portal-paciente (registrado en `specs/MAPA.md`)
 
@@ -63,7 +63,7 @@ Una vez dentro, el paciente ve primero sus próximas citas (fecha, hora, profesi
 
 **Por qué esta prioridad**: responder «¿cuándo tengo cita?» es la llamada más frecuente; con solo esta historia (más la 1) la recepción ya se ahorra parte de las llamadas.
 
-**Prueba independiente**: con la semilla cargada, entrar como Teresa Méndez y comprobar que su cita del día laborable +1 aparece la primera en «Próximas citas» con todos sus datos; entrar como Rocío Garrido y comprobar que su cita del día laborable −3 aparece en «Citas pasadas» como «Realizada».
+**Prueba independiente**: con la semilla cargada, entrar como Teresa Méndez y comprobar que su cita del día laborable +1 aparece en «Próximas citas» con todos sus datos; entrar como Rocío Garrido y comprobar que su cita del día laborable −3 aparece en «Citas pasadas» como «Realizada».
 
 **Escenarios de aceptación**:
 
@@ -84,7 +84,7 @@ El paciente que no puede acudir cancela desde el portal una cita futura, con una
 
 **Por qué esta prioridad**: es la otra mitad de las llamadas que atiende Sonia y la que más tiempo le cuesta; además, un hueco avisado con 24 horas de margen puede volver a ocuparse.
 
-**Prueba independiente**: con la semilla cargada y el reloj en el día laborable +1 a las 09:00 (más de 24 h antes de la cita), entrar como Laura Romero, cancelar su cita del día laborable +2 y comprobar que pasa a «Cancelada» en el portal y que su franja de 09:45 a 10:30 aparece libre en la agenda de Jorge.
+**Prueba independiente**: con la semilla cargada, reservar desde el panel una cita de Laura Romero con Jorge a más de 24 horas vista (sin gastar citas de la semilla), cancelarla desde el portal y comprobar que pasa a «Cancelada» en el portal y que su franja aparece libre en la agenda de Jorge.
 
 **Escenarios de aceptación**:
 
@@ -128,7 +128,7 @@ Sonia, desde cualquier pantalla del panel de recepción, ve un aviso con el núm
 - **Ficha sin email**: el paciente no puede entrar en el portal. Si escribe un email que no consta, recibe el mensaje neutro de siempre (que ya le dice que llame a la clínica si no le llega el enlace).
 - **Email escrito con mayúsculas o espacios**: «Teresa.Mendez@ejemplo.es » identifica la misma ficha que «teresa.mendez@ejemplo.es».
 - **Mismo email en dos clínicas**: cada clínica tiene su propio portal; el enlace de Clínica Eleva nunca da acceso a citas de otra clínica.
-- **Paciente que cambia de email**: el acceso usa el email vigente en su ficha; la recepción lo actualiza fuera de esta feature. Las sesiones ya abiertas terminan de forma natural al caducar.
+- **Paciente que cambia de email**: el acceso usa el email vigente en su ficha; la recepción lo actualiza fuera de esta feature. Una sesión ya abierta deja de mostrar las citas de la ficha cuyo email ha cambiado en la siguiente consulta, y termina de forma natural al caducar.
 - **Enlace reenviado o abierto en otro dispositivo**: el enlace es de un solo uso y caduca a los 10 minutos; quien lo abre primero entra; un segundo intento ve «Este enlace ya no es válido».
 - **Cita cancelada por la recepción**: en el portal aparece igual que una cancelada por el paciente («Cancelada») y no genera aviso en recepción.
 - **Dos dispositivos del mismo paciente** cancelando la misma cita a la vez: se cancela una sola vez y genera un solo aviso.
@@ -142,7 +142,7 @@ Sonia, desde cualquier pantalla del panel de recepción, ve un aviso con el núm
 - **FR-001**: El sistema DEBE ofrecer un portal por clínica al que el paciente accede sin crear cuenta ni contraseña y sin que la recepción tenga que darle de alta ni gestionar su acceso: el paciente escribe su email y recibe en él un enlace de acceso de un solo uso.
 - **FR-002**: El sistema DEBE enviar el enlace solo si el email coincide con el de al menos una ficha de paciente de esa clínica, comparándolo sin distinguir mayúsculas y sin espacios al principio ni al final. El portal NO DEBE pedir ni guardar datos nuevos del paciente.
 - **FR-003**: Ante un email que no corresponde a ninguna ficha, el portal DEBE responder exactamente igual (mismo mensaje y mismo paso siguiente) que ante uno que sí corresponde, sin revelar si existe, y NO DEBE enviar nada.
-- **FR-004**: El sistema DEBE limitar las solicitudes de enlace a 5 por email y hora; al superarlo DEBE dejar de enviar enlaces a ese email durante el resto de esa hora y explicarlo sin jerga.
+- **FR-004**: El sistema DEBE limitar las solicitudes de enlace a 5 por email y hora; al superarlo DEBE dejar de enviar enlaces a ese email hasta que haya menos de 5 solicitudes en la última hora, y explicarlo sin jerga.
 - **FR-005**: La sesión del paciente DEBE caducar 30 minutos después de entrar, con independencia de la actividad; el paciente DEBE poder salir explícitamente en cualquier momento.
 - **FR-006**: El enlace de acceso DEBE caducar a los 10 minutos de emitirse y dejar de valer tras su primer uso; pedir un enlace nuevo no invalida una sesión ya abierta.
 - **FR-007**: El email del enlace DEBE estar en español de España, indicar el nombre de la clínica, el plazo de caducidad y que, si el paciente no lo ha pedido, puede ignorarlo.
@@ -166,7 +166,7 @@ Sonia, desde cualquier pantalla del panel de recepción, ve un aviso con el núm
 
 **Aviso de cancelaciones en recepción**
 
-- **FR-019**: El panel de recepción DEBE mostrar, en todas sus pantallas, un aviso con el número de cancelaciones hechas desde el portal pendientes de revisar; si no hay ninguna, el aviso no se muestra.
+- **FR-019**: El panel de recepción DEBE mostrar, en todas las pantallas del panel tras entrar con la clave, un aviso con el número de cancelaciones hechas desde el portal pendientes de revisar; si no hay ninguna, el aviso no se muestra.
 - **FR-020**: Desde el aviso, la recepción DEBE poder ver la lista de cancelaciones pendientes, de la más reciente a la más antigua, cada una con paciente, profesional, fecha y horario del hueco liberado, servicio, día y hora de la cancelación, y la indicación «Hueco ya pasado» cuando el inicio del hueco ya ha llegado.
 - **FR-021**: La recepción DEBE poder marcar cada cancelación como revisada; una cancelación revisada sale de la lista de pendientes. Marcarla dos veces, o a la vez desde dos puestos, DEBE tener el mismo efecto que marcarla una vez.
 - **FR-022**: Solo las cancelaciones hechas desde el portal DEBEN generar aviso; las hechas por la recepción no.
