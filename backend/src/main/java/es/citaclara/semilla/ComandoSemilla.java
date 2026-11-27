@@ -6,6 +6,7 @@ import org.springframework.boot.ExitCodeGenerator;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 /**
@@ -18,15 +19,22 @@ public class ComandoSemilla implements ApplicationRunner {
 
     private final CargadorSemilla cargador;
     private final ApplicationContext contexto;
+    private final Environment entorno;
 
-    public ComandoSemilla(CargadorSemilla cargador, ApplicationContext contexto) {
+    public ComandoSemilla(CargadorSemilla cargador, ApplicationContext contexto, Environment entorno) {
         this.cargador = cargador;
+        this.entorno = entorno;
         this.contexto = contexto;
     }
 
     @Override
     public void run(ApplicationArguments argumentos) {
         int codigo = 0;
+        if (entorno.acceptsProfiles(org.springframework.core.env.Profiles.of("produccion"))) {
+            System.err.println("La carga de datos de demostración no se puede ejecutar con el perfil de producción.");
+            System.exit(SpringApplication.exit(contexto, (ExitCodeGenerator) () -> 1));
+            return;
+        }
         try {
             CargadorSemilla.Resumen r = cargador.cargar();
             System.out.printf("""

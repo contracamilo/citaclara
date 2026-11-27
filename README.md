@@ -103,3 +103,7 @@ CLAUDE.md           decisiones y convenciones transversales para nuevas features
 3. Abrir un PR. La CI tiene que estar en verde y la trazabilidad completa.
 
 Las convenciones que ya existen (importes en céntimos, zona horaria, errores, aislamiento por clínica, etc.) están en [`CLAUDE.md`](CLAUDE.md).
+
+## Producción
+
+`docker-compose.yml` es solo para desarrollo (credenciales públicas, sin TLS). Para un entorno real usa `docker-compose.produccion.yml` con `DB_CLAVE` propia, TLS en un proxy delante y `COOKIE_SEGURA=true`; con el perfil `produccion` el arranque falla si quedan valores de desarrollo y la semilla se niega a ejecutarse. Nunca cargues los datos de demostración en un entorno real. Detalle: `specs/005-security-audit/informe-auditoria.md`.

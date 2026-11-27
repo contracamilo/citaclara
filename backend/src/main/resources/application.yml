@@ -28,6 +28,14 @@ server:
         secure: ${COOKIE_SEGURA:false}
         name: CITACLARA_SESION
 
+logging:
+  level:
+    # Spec 005 (H-03): el mensaje de PostgreSQL ante una violación de restricción incluye los valores
+    # en conflicto (p. ej. el teléfono de un paciente); no debe llegar a los registros. El error se
+    # traduce y se registra, sin valores, en ManejadorErrores.
+    "[org.hibernate.orm.jdbc.error]": "OFF"
+    "[org.hibernate.engine.jdbc.spi.SqlExceptionHelper]": "OFF"
+
 management:
   endpoints:
     web:
@@ -41,3 +49,17 @@ spring:
       on-profile: semilla
   main:
     web-application-type: none
+
+---
+# Spec 005 (H-05, H-06): sin valores por defecto de desarrollo; ValidacionProduccion los comprueba.
+spring:
+  config:
+    activate:
+      on-profile: produccion
+  datasource:
+    password: ${DB_CLAVE}
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${COOKIE_SEGURA:true}

@@ -1,0 +1,11 @@
+# Spec 005 (FR-016): reglas por defecto de gitleaks más una única excepción acotada.
+title = "CitaClara"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Clave de demostración de Clínica Eleva, documentada y sin valor fuera del entorno de demostración"
+regexTarget = "match"
+regexes = ['''eleva-demo-2026''']
+paths = ['''README\.md''', '''CLAUDE\.md''', '''frontend/tests/.*''', '''specs/.*''', '''backend/src/.*''']

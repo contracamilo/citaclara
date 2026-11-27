@@ -13,11 +13,13 @@ carpeta="${1:-specs/001-nucleo-agenda}"
 spec="$raiz/$carpeta/spec.md"
 numero="$(basename "$carpeta" | cut -d- -f1)"
 
-# Criterios que no se pueden automatizar: se miden con recepcionistas reales (SC-004, SC-005,
-# SC-006 son resultados de uso, no comportamiento del producto).
-excluidos="SC-004 SC-005 SC-006"
-
 [ -f "$spec" ] || { echo "No existe $spec" >&2; exit 2; }
+
+# Criterios que no se pueden automatizar (se miden con personas reales, no son comportamiento del
+# producto). Cada spec los declara en una línea «**Excluidos de la trazabilidad**: SC-nnn …»; si no
+# la tiene, se usan los de la spec 001 (SC-004, SC-005, SC-006).
+excluidos="$(grep -m1 -E '^\*\*Excluidos de la trazabilidad\*\*:' "$spec" | sed -E 's/^[^:]*:[[:space:]]*//' || true)"
+excluidos="${excluidos:-SC-004 SC-005 SC-006}"
 
 # 1. Identificadores de la spec.
 requisitos="$(grep -oE '\*\*(FR|SC)-[0-9]{3}' "$spec" | tr -d '*' | sort -u)"

@@ -7,6 +7,9 @@ export const MENSAJE_SESION_CADUCADA = 'Tu sesión ha caducado. Vuelve a introdu
 export const MENSAJE_SIN_CONEXION = 'No hay conexión con el servidor. Inténtalo de nuevo.';
 export const MENSAJE_ERROR_GENERICO = 'Algo ha fallado. Inténtalo de nuevo en unos segundos.';
 
+export const MENSAJE_DEMASIADAS_PETICIONES = 'Has probado demasiadas veces. Espera unos minutos e inténtalo de nuevo.';
+export const MENSAJE_DEMASIADO_GRANDE = 'Lo que intentas enviar es demasiado grande. Acórtalo e inténtalo de nuevo.';
+
 const CODIGOS_SESION_PERDIDA = new Set(['SIN_SESION', 'SESION_CADUCADA']);
 
 export interface DetalleSesionPerdida {
@@ -64,6 +67,8 @@ async function leerProblema(respuesta: Response): Promise<Problema> {
       // cuerpo ilegible: se usa el mensaje genérico
     }
   }
+  if (respuesta.status === 429) return { codigo: 'DEMASIADAS_PETICIONES', mensaje: MENSAJE_DEMASIADAS_PETICIONES };
+  if (respuesta.status === 413) return { codigo: 'CUERPO_DEMASIADO_GRANDE', mensaje: MENSAJE_DEMASIADO_GRANDE };
   return { codigo: 'ERROR_INTERNO', mensaje: MENSAJE_ERROR_GENERICO };
 }
 

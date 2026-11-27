@@ -81,14 +81,45 @@ public class ManejadorErrores {
         if (Restricciones.esSolape(error)) {
             return respuesta(HttpStatus.CONFLICT, "HUECO_RECIEN_OCUPADO", Restricciones.MENSAJE_HUECO_RECIEN_OCUPADO);
         }
-        LOG.error("Violación de integridad no prevista", error);
+        LOG.error("Violación de integridad no prevista: {}", resumenSinDatos(error));
         return respuesta(HttpStatus.INTERNAL_SERVER_ERROR, "ERROR_INTERNO", Mensajes.ERROR_INTERNO);
     }
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ProblemDetail> inesperado(Exception error) {
-        LOG.error("Error no controlado", error);
+        LOG.error("Error no controlado: {}", resumenSinDatos(error));
         return respuesta(HttpStatus.INTERNAL_SERVER_ERROR, "ERROR_INTERNO", Mensajes.ERROR_INTERNO);
+    }
+
+    /**
+     * Resumen de una excepción apto para el registro: clases de la cadena de causas, {@code SQLState}
+     * y el primer método propio donde ocurrió. Nunca el mensaje, que puede llevar datos personales
+     * (por ejemplo, el valor de una restricción de unicidad violada). Spec 005, H-03.
+     */
+    static String resumenSinDatos(Throwable error) {
+        StringBuilder sb = new StringBuilder();
+        String sqlState = null;
+        Throwable actual = error;
+        for (int i = 0; actual != null && i < 8; i++, actual = actual.getCause()) {
+            if (i > 0) {
+                sb.append(" <- ");
+            }
+            sb.append(actual.getClass().getName());
+            if (sqlState == null && actual instanceof java.sql.SQLException sql) {
+                sqlState = sql.getSQLState();
+            }
+        }
+        if (sqlState != null) {
+            sb.append(" sqlState=").append(sqlState);
+        }
+        for (StackTraceElement marco : error.getStackTrace()) {
+            if (marco.getClassName().startsWith("es.citaclara")) {
+                sb.append(" en ").append(marco.getClassName()).append('.').append(marco.getMethodName())
+                        .append(':').append(marco.getLineNumber());
+                break;
+            }
+        }
+        return sb.toString();
     }
 
     private static ResponseEntity<ProblemDetail> datosNoValidos(List<Map<String, String>> errores) {
