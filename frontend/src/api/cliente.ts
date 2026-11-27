@@ -1,4 +1,4 @@
-import type { Accion, Agenda, Cita, Contexto, NuevaCita, Paciente, Problema } from './tipos';
+import type { Accion, Agenda, Analitica, Cita, Contexto, NuevaCita, Paciente, Problema } from './tipos';
 
 /** Evento global que se emite cuando cualquier llamada recibe 401 SIN_SESION o SESION_CADUCADA. */
 export const EVENTO_SESION_PERDIDA = 'sesion-perdida';
@@ -126,6 +126,8 @@ export const api = {
     if (fecha) params.set('fecha', fecha);
     return peticion<Agenda>('GET', `/api/agenda?${params}`, { senal });
   },
+
+  obtenerAnalitica: (senal?: AbortSignal) => peticion<Analitica>('GET', '/api/analitica', { senal }),
 
   buscarPacientes: (q: string, senal?: AbortSignal) =>
     peticion<Paciente[]>('GET', `/api/pacientes?${new URLSearchParams({ q })}`, { senal }),

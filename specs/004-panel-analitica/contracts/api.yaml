@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  title: CitaClara — API de analítica (004-panel-analitica)
+  version: 0.1.0
+  description: |
+    Una sola operación de solo lectura. Hereda las convenciones de `specs/001-nucleo-agenda/contracts/api.yaml`:
+    - Mismo origen; sesión por cookie `HttpOnly` (la misma de la agenda, FR-001).
+    - Fechas locales de Madrid como `YYYY-MM-DD`. Importes en céntimos enteros.
+    - Errores en Problem Details con `codigo` (para el programa) y `mensaje` (español de España).
+    - 401 `SIN_SESION` / `SESION_CADUCADA` si no hay sesión válida.
+    - Solo datos de la clínica de la sesión (FR-002). La operación no escribe nada (FR-003).
+    - Porcentajes: `Proporcion` con recuento exacto y décimas enteras (research D4). El cliente NO recalcula ni redondea.
+servers:
+  - url: /api
+
+paths:
+  /analitica:
+    get:
+      summary: Analítica de la clínica (US1–US3)
+      description: |
+        «Hoy» es la fecha de Madrid según el reloj del servidor. El periodo son las 8 semanas
+        naturales (lunes–domingo) completas anteriores a la semana en curso (FR-007); la última
+        semana completa es la octava y la más reciente.
+      operationId: obtenerAnalitica
+      responses:
+        '200':
+          description: Cifras de la clínica (con todo a cero y `sinDatos: true` si no hay citas cerradas)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analitica'
+        '401':
+          $ref: '#/components/responses/SesionNoValida'
+
+components:
+  schemas:
+    Proporcion:
+      type: object
+      description: |
+        Cociente exacto `parte / total`. `decimas` es el porcentaje por diez (93 = 9,3 %), redondeado
+        half-up una sola vez; `null` si `total` es 0 (la interfaz muestra «Sin datos», FR-011).
+      required: [parte, total, decimas]
+      properties:
+        parte: { type: integer, format: int64, minimum: 0, example: 30 }
+        total: { type: integer, format: int64, minimum: 0, example: 321 }
+        decimas: { type: [integer, 'null'], minimum: 0, example: 93 }
+
+    Semana:
+      type: object
+      required: [inicio, fin]
+      properties:
+        inicio: { type: string, format: date, description: Lunes, example: '2026-11-23' }
+        fin: { type: string, format: date, description: Domingo, example: '2026-11-29' }
+
+    Analitica:
+      type: object
+      required: [sinDatos, ultimaSemana, ingresos, evolucion]
+      properties:
+        sinDatos:
+          type: boolean
+          description: No hay ninguna cita cerrada en las 8 semanas (estado vacío, US4-AC4)
+        ultimaSemana:
+          $ref: '#/components/schemas/UltimaSemana'
+        ingresos:
+          $ref: '#/components/schemas/Ingresos'
+        evolucion:
+          type: array
+          description: Las 8 semanas, de la más antigua a la más reciente (US3-AC1); ninguna se omite (US3-AC2)
+          minItems: 8
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/SemanaEvolucion'
+
+    UltimaSemana:
+      type: object
+      required: [semana, profesionales]
+      properties:
+        semana:
+          $ref: '#/components/schemas/Semana'
+        profesionales:
+          type: array
+          description: Todos los profesionales de la clínica, aunque no tengan citas (FR-004, FR-005)
+          items:
+            type: object
+            required: [profesionalId, nombre, especialidadNombre, tasaNoAsistencia, ocupacion]
+            properties:
+              profesionalId: { type: integer, format: int64 }
+              nombre: { type: string, example: María }
+              especialidadNombre: { type: string, example: Fisioterapia }
+              tasaNoAsistencia:
+                $ref: '#/components/schemas/Proporcion'
+              ocupacion:
+                $ref: '#/components/schemas/Proporcion'
+
+    Ingresos:
+      type: object
+      description: Periodo de 8 semanas (FR-006, FR-016)
+      required: [servicios, totalCentimos, totalNoObtenidoCentimos]
+      properties:
+        servicios:
+          type: array
+          description: Todos los servicios de la clínica, aunque no tengan citas (US2-AC4)
+          items:
+            type: object
+            required: [servicioId, nombre, citasCompletadas, importeCentimos, citasNoAsistidas, importeNoObtenidoCentimos]
+            properties:
+              servicioId: { type: integer, format: int64 }
+              nombre: { type: string, example: Sesión fisioterapia }
+              citasCompletadas: { type: integer, example: 426 }
+              importeCentimos: { type: integer, format: int64, example: 1704000 }
+              citasNoAsistidas: { type: integer, example: 56 }
+              importeNoObtenidoCentimos: { type: integer, format: int64, example: 224000 }
+        totalCentimos:
+          type: integer
+          format: int64
+          description: Suma exacta de `importeCentimos` de los servicios (SC-002)
+          example: 3487000
+        totalNoObtenidoCentimos:
+          type: integer
+          format: int64
+          description: Suma exacta de `importeNoObtenidoCentimos` de los servicios
+          example: 427500
+
+    SemanaEvolucion:
+      type: object
+      required: [semana, completadas, noAsistidas, canceladas, tasaNoAsistencia, ingresosCentimos, ocupacion]
+      properties:
+        semana:
+          $ref: '#/components/schemas/Semana'
+        completadas: { type: integer, example: 110 }
+        noAsistidas: { type: integer, example: 11 }
+        canceladas: { type: integer, example: 14 }
+        tasaNoAsistencia:
+          $ref: '#/components/schemas/Proporcion'
+        ingresosCentimos: { type: integer, format: int64, example: 438000 }
+        ocupacion:
+          type: array
+          description: Una entrada por profesional, en el mismo orden que `ultimaSemana.profesionales`
+          items:
+            type: object
+            required: [profesionalId, ocupacion]
+            properties:
+              profesionalId: { type: integer, format: int64 }
+              ocupacion:
+                $ref: '#/components/schemas/Proporcion'
+
+  responses:
+    SesionNoValida:
+      description: Sin sesión o sesión caducada
+      content:
+        application/problem+json:
+          schema:
+            type: object
+            required: [codigo, mensaje]
+            properties:
+              codigo: { type: string, enum: [SIN_SESION, SESION_CADUCADA] }
+              mensaje: { type: string }
