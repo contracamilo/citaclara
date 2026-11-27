@@ -43,6 +43,11 @@ export function formatearFecha(fecha: string): string {
   return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${String(a).padStart(4, '0')}`;
 }
 
+/** Semana lunes–domingo → «23/11/2026 – 29/11/2026» (FR-014). */
+export function formatearSemana(semana: { inicio: string; fin: string }): string {
+  return `${formatearFecha(semana.inicio)} – ${formatearFecha(semana.fin)}`;
+}
+
 /** «2026-11-26» → «jueves, 26/11/2026». */
 export function formatearFechaLarga(fecha: string): string {
   return `${DIAS_SEMANA[aUtc(fecha).getUTCDay()]}, ${formatearFecha(fecha)}`;
