@@ -4,3 +4,24 @@ prompts_specs_paralelas.txt
 
 # Ajustes locales de Claude Code
 .claude/settings.local.json
+
+# Java / Maven
+target/
+*.class
+*.log
+
+# Node / frontend
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.env*
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/

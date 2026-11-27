@@ -1,0 +1,177 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+/*
+ * Tokens de diseño (research D15). Colores en OKLCH; modo claro por defecto y oscuro
+ * sobrescribiendo las mismas variables con prefers-color-scheme. Contraste WCAG 2.2 AA:
+ * texto ≥ 4,5:1 sobre su superficie en ambos modos.
+ */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-fondo: oklch(0.985 0.004 270);
+  --color-superficie: oklch(1 0 0);
+  --color-superficie-2: oklch(0.965 0.006 270);
+  --color-texto: oklch(0.22 0.02 270);
+  --color-texto-suave: oklch(0.45 0.02 270);
+  --color-borde: oklch(0.9 0.01 270);
+  --color-borde-fuerte: oklch(0.7 0.02 270);
+
+  --color-acento: oklch(0.5 0.2 275);
+  --color-acento-hover: oklch(0.44 0.2 275);
+  --color-sobre-acento: oklch(1 0 0);
+  --color-acento-suave: oklch(0.95 0.03 275);
+
+  --color-peligro: oklch(0.5 0.19 25);
+  --color-peligro-hover: oklch(0.44 0.19 25);
+  --color-sobre-peligro: oklch(1 0 0);
+  --color-peligro-suave: oklch(0.96 0.025 25);
+
+  --color-exito: oklch(0.45 0.12 150);
+  --color-exito-suave: oklch(0.96 0.035 150);
+  --color-info: oklch(0.45 0.12 250);
+  --color-info-suave: oklch(0.96 0.025 250);
+
+  /* Estados de la cita: color + icono + texto (nunca solo color, FR-028). */
+  --color-reservada: oklch(0.45 0.18 275);
+  --color-reservada-fondo: oklch(0.95 0.035 275);
+  --color-completada: oklch(0.42 0.11 150);
+  --color-completada-fondo: oklch(0.95 0.04 150);
+  --color-cancelada: oklch(0.45 0.01 270);
+  --color-cancelada-fondo: oklch(0.94 0.005 270);
+  --color-no-asistida: oklch(0.45 0.1 60);
+  --color-no-asistida-fondo: oklch(0.95 0.05 80);
+
+  --radius-tarjeta: 1.125rem;
+  --radius-dialogo: 1.25rem;
+
+  --shadow-suave: 0 1px 2px oklch(0.2 0.02 270 / 0.06), 0 4px 16px oklch(0.2 0.02 270 / 0.06);
+  --shadow-elevada: 0 8px 32px oklch(0.2 0.02 270 / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-fondo: oklch(0.17 0.01 270);
+    --color-superficie: oklch(0.22 0.012 270);
+    --color-superficie-2: oklch(0.26 0.014 270);
+    --color-texto: oklch(0.96 0.005 270);
+    --color-texto-suave: oklch(0.78 0.015 270);
+    --color-borde: oklch(0.33 0.015 270);
+    --color-borde-fuerte: oklch(0.5 0.02 270);
+
+    --color-acento: oklch(0.74 0.13 275);
+    --color-acento-hover: oklch(0.8 0.11 275);
+    --color-sobre-acento: oklch(0.18 0.03 275);
+    --color-acento-suave: oklch(0.3 0.06 275);
+
+    --color-peligro: oklch(0.74 0.14 25);
+    --color-peligro-hover: oklch(0.8 0.12 25);
+    --color-sobre-peligro: oklch(0.18 0.03 25);
+    --color-peligro-suave: oklch(0.3 0.06 25);
+
+    --color-exito: oklch(0.82 0.13 150);
+    --color-exito-suave: oklch(0.29 0.05 150);
+    --color-info: oklch(0.82 0.1 250);
+    --color-info-suave: oklch(0.29 0.05 250);
+
+    --color-reservada: oklch(0.84 0.1 275);
+    --color-reservada-fondo: oklch(0.3 0.07 275);
+    --color-completada: oklch(0.84 0.12 150);
+    --color-completada-fondo: oklch(0.29 0.05 150);
+    --color-cancelada: oklch(0.82 0.01 270);
+    --color-cancelada-fondo: oklch(0.3 0.01 270);
+    --color-no-asistida: oklch(0.86 0.12 80);
+    --color-no-asistida-fondo: oklch(0.3 0.05 70);
+
+    --shadow-suave: 0 1px 2px oklch(0 0 0 / 0.3), 0 4px 16px oklch(0 0 0 / 0.25);
+    --shadow-elevada: 0 8px 32px oklch(0 0 0 / 0.5);
+  }
+}
+
+@layer base {
+  html {
+    color-scheme: light dark;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    font-family: var(--font-sans);
+    /* Red de seguridad: el diseño no depende de esto (SC-009). */
+    overflow-x: clip;
+    min-height: 100dvh;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-acento);
+    outline-offset: 2px;
+  }
+}
+
+/* Horas e importes con cifras tabulares. */
+.numeros {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Diálogo nativo: hoja inferior en móvil (< 640 px) y ventana centrada a partir de 640 px. */
+.dialogo {
+  margin: auto 0 0;
+  inset-inline: 0;
+  width: 100%;
+  max-width: 100%;
+  max-height: 92dvh;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-dialogo) var(--radius-dialogo) 0 0;
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  box-shadow: var(--shadow-elevada);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 640px) {
+  .dialogo {
+    margin: auto;
+    max-width: 34rem;
+    border-radius: var(--radius-dialogo);
+  }
+}
+
+.dialogo::backdrop {
+  background: oklch(0.2 0.02 270 / 0.45);
+  backdrop-filter: blur(2px);
+}
+
+/* Resaltado breve de la cita recién reservada. */
+@keyframes resaltar {
+  from { box-shadow: 0 0 0 4px var(--color-acento); }
+  to { box-shadow: 0 0 0 0 transparent; }
+}
+
+.resaltada {
+  animation: resaltar 2s ease-out;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

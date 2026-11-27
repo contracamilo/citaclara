@@ -1,0 +1,61 @@
+# CitaClara — entorno completo (research D16).
+#   docker compose up -d --build        → db, api y web (http://localhost:8080, o $PUERTO_WEB)
+#   docker compose run --rm semilla     → carga los datos de demostración de Clínica Eleva
+name: citaclara
+
+x-entorno-api: &entorno-api
+  DB_URL: jdbc:postgresql://db:5432/citaclara
+  DB_USUARIO: citaclara
+  DB_CLAVE: citaclara
+  COOKIE_SEGURA: "false"
+
+services:
+  db:
+    image: postgres:18.7-alpine
+    environment:
+      POSTGRES_DB: citaclara
+      POSTGRES_USER: citaclara
+      POSTGRES_PASSWORD: citaclara
+    volumes:
+      - datos-db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citaclara -d citaclara"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./backend
+    image: citaclara-api
+    environment: *entorno-api
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  web:
+    build: ./frontend
+    image: citaclara-web
+    ports:
+      - "${PUERTO_WEB:-8080}:80"   # PUERTO_WEB=8081 si el 8080 está ocupado
+    depends_on:
+      api:
+        condition: service_healthy
+
+  semilla:
+    image: citaclara-api
+    profiles: ["herramientas"]
+    environment:
+      <<: *entorno-api
+      SPRING_PROFILES_ACTIVE: semilla
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  datos-db:
