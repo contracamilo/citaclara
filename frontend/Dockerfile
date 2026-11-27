@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # Etapa 2: nginx (versión fijada) sirviendo los estáticos y redirigiendo /api al backend
-FROM nginx:1.28.3-alpine
+FROM nginx:1.31.0-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY seguridad.conf /etc/nginx/seguridad.conf
 COPY --from=construccion /app/dist /usr/share/nginx/html
