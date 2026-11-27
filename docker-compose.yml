@@ -3,6 +3,8 @@
 #   docker compose run --rm semilla     → carga los datos de demostración de Clínica Eleva
 name: citaclara
 
+# SOLO DESARROLLO: las credenciales de este fichero son públicas. Para producción, docker-compose.produccion.yml.
+
 x-entorno-api: &entorno-api
   DB_URL: jdbc:postgresql://db:5432/citaclara
   DB_USUARIO: citaclara

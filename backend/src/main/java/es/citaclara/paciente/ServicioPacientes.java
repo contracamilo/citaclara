@@ -13,6 +13,8 @@ import java.util.List;
 @Service
 public class ServicioPacientes {
 
+    static final int LONGITUD_MAXIMA_BUSQUEDA = 80;
+
     private final RepositorioPaciente pacientes;
 
     public ServicioPacientes(RepositorioPaciente pacientes) {
@@ -26,8 +28,12 @@ public class ServicioPacientes {
             throw new ErrorNegocio(HttpStatus.BAD_REQUEST, "DATOS_NO_VALIDOS",
                     "Escribe al menos 2 letras o cifras para buscar.");
         }
+        if (texto.length() > LONGITUD_MAXIMA_BUSQUEDA) {
+            throw new ErrorNegocio(HttpStatus.BAD_REQUEST, "DATOS_NO_VALIDOS",
+                    "La búsqueda es demasiado larga. Escribe como máximo 80 caracteres.");
+        }
         String cifras = Telefono.soloCifras(texto);
-        return pacientes.buscar(clinicaId, texto, cifras.length() >= 2 ? cifras : "").stream()
+        return pacientes.buscar(clinicaId, escaparComodines(texto), cifras.length() >= 2 ? cifras : "").stream()
                 .map(PacienteRespuesta::desde).toList();
     }
 
@@ -55,5 +61,10 @@ public class ServicioPacientes {
         return new ErrorNegocio(HttpStatus.CONFLICT, "PACIENTE_DUPLICADO",
                 "Ya hay un paciente con ese teléfono: " + existente.getNombre() + ". ¿Quieres usar su ficha?")
                 .con("pacienteExistente", PacienteRespuesta.desde(existente));
+    }
+
+    /** Spec 005 (H-12): {@code %}, {@code _} y {@code \} se buscan como texto literal. */
+    static String escaparComodines(String texto) {
+        return texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
     }
 }

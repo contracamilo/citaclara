@@ -122,22 +122,22 @@ description: "Lista de tareas de la feature 005-security-audit"
 
 #### Cabeceras y endurecimiento de nginx (H6, H7, H13)
 
-- [ ] T032 [US3] Escribir `frontend/tests/e2e/seguridad.spec.ts`: `[005][FR-005][FR-006]` comprueba en cada ruta (`/`, `/eleva`, `/assets/*`, `/api/*`) las cabeceras de [contracts/cabeceras-seguridad.md](contracts/cabeceras-seguridad.md), ausencia de `Server` con versión, cero violaciones de la política de contenido (escuchando `securitypolicyviolation`), `Cache-Control: no-store` en `/api` y la cookie con `HttpOnly` y `SameSite=Strict`; debe fallar antes de T033
-- [ ] T033 [US3] Aplicar en `frontend/nginx.conf` las cabeceras, `server_tokens off`, `client_max_body_size 64k`, `proxy_set_header X-Forwarded-For $remote_addr` (sin concatenar el valor del cliente) y `Strict-Transport-Security` solo con `TLS_ACTIVO=true`; si la interfaz exige `unsafe-inline`, documentarlo como hallazgo bajo y no añadirlo en silencio
-- [ ] T034 [US3] Añadir `limit_req` en `frontend/nginx.conf`: `/api/` 20 peticiones por segundo con ráfaga de 40 y ruta de acceso 5 por minuto con ráfaga de 5, con respuesta 429 y 413 que la interfaz traduce a un mensaje comprensible en `frontend/src/api/cliente.ts` y `frontend/src/estilos.css` si procede
+- [X] T032 [US3] Escribir `frontend/tests/e2e/seguridad.spec.ts`: `[005][FR-005][FR-006]` comprueba en cada ruta (`/`, `/eleva`, `/assets/*`, `/api/*`) las cabeceras de [contracts/cabeceras-seguridad.md](contracts/cabeceras-seguridad.md), ausencia de `Server` con versión, cero violaciones de la política de contenido (escuchando `securitypolicyviolation`), `Cache-Control: no-store` en `/api` y la cookie con `HttpOnly` y `SameSite=Strict`; debe fallar antes de T033
+- [X] T033 [US3] Aplicar en `frontend/nginx.conf` las cabeceras, `server_tokens off`, `client_max_body_size 64k`, `proxy_set_header X-Forwarded-For $remote_addr` (sin concatenar el valor del cliente) y `Strict-Transport-Security` solo con `TLS_ACTIVO=true`; si la interfaz exige `unsafe-inline`, documentarlo como hallazgo bajo y no añadirlo en silencio
+- [X] T034 [US3] Añadir `limit_req` en `frontend/nginx.conf`: `/api/` 20 peticiones por segundo con ráfaga de 40 y ruta de acceso 5 por minuto con ráfaga de 5, con respuesta 429 y 413 que la interfaz traduce a un mensaje comprensible en `frontend/src/api/cliente.ts` y `frontend/src/estilos.css` si procede
 - [ ] T035 [US3] Si H13 se confirma como alto: ejecutar nginx sin privilegios y la API con sistema de ficheros de solo lectura y límites en `docker-compose.yml`, `frontend/Dockerfile` y `backend/Dockerfile`; justificar por escrito cualquier imagen nueva (Principio IV)
 
 #### Configuración segura por entorno (H1, H4, H5)
 
-- [ ] T036 [P] [US3] `PerfilProduccionTest` en `backend/src/test/java/es/citaclara/seguridad/PerfilProduccionTest.java`: `[005][FR-006]` el arranque con perfil `produccion` **falla** con contraseña de BD de desarrollo, `COOKIE_SEGURA` distinta de `true` o clínicas con la clave de demostración, con un mensaje claro; con valores correctos arranca
-- [ ] T037 [US3] Crear `backend/src/main/java/es/citaclara/seguridad/ValidacionProduccion.java` (activo solo con el perfil `produccion`) y ajustar `backend/src/main/resources/application.yml` para que el perfil exija `DB_CLAVE` sin valor por defecto
-- [ ] T038 [US3] Hacer que `backend/src/main/java/es/citaclara/semilla/ComandoSemilla.java` se niegue a ejecutarse con el perfil `produccion` (H1) y dejar de imprimir la clave de demostración fuera del perfil de demostración
-- [ ] T039 [P] [US3] Crear `docker-compose.produccion.yml` sin valores por defecto para secretos, con `COOKIE_SEGURA=true` y `TLS_ACTIVO`, y etiquetar los valores de `docker-compose.yml` como «solo desarrollo»; actualizar `README.md` con la advertencia
+- [X] T036 [P] [US3] `PerfilProduccionTest` en `backend/src/test/java/es/citaclara/seguridad/PerfilProduccionTest.java`: `[005][FR-006]` el arranque con perfil `produccion` **falla** con contraseña de BD de desarrollo, `COOKIE_SEGURA` distinta de `true` o clínicas con la clave de demostración, con un mensaje claro; con valores correctos arranca
+- [X] T037 [US3] Crear `backend/src/main/java/es/citaclara/seguridad/ValidacionProduccion.java` (activo solo con el perfil `produccion`) y ajustar `backend/src/main/resources/application.yml` para que el perfil exija `DB_CLAVE` sin valor por defecto
+- [X] T038 [US3] Hacer que `backend/src/main/java/es/citaclara/semilla/ComandoSemilla.java` se niegue a ejecutarse con el perfil `produccion` (H1) y dejar de imprimir la clave de demostración fuera del perfil de demostración
+- [X] T039 [P] [US3] Crear `docker-compose.produccion.yml` sin valores por defecto para secretos, con `COOKIE_SEGURA=true` y `TLS_ACTIVO`, y etiquetar los valores de `docker-compose.yml` como «solo desarrollo»; actualizar `README.md` con la advertencia
 
 #### Límites de entrada (H10)
 
-- [ ] T040 [P] [US3] `LimitesEntradaTest` en `backend/src/test/java/es/citaclara/seguridad/LimitesEntradaTest.java`: `[005][FR-009]` con `q` de 80 caracteres (acepta) y de 81 (rechaza con mensaje de usuario), `%`, `_` y `\` tratados como texto literal, cuerpo mayor de 64 KB rechazado y JSON mal formado o profundo con 400 sin traza; debe fallar antes de T041
-- [ ] T041 [US3] Limitar `q` a 80 caracteres y escapar `%`, `_` y `\` en `backend/src/main/java/es/citaclara/paciente/ServicioPacientes.java` y `RepositorioPaciente.java` (cláusula `ESCAPE`), y fijar tamaños máximos de cuerpo en `backend/src/main/resources/application.yml`
+- [X] T040 [P] [US3] `LimitesEntradaTest` en `backend/src/test/java/es/citaclara/seguridad/LimitesEntradaTest.java`: `[005][FR-009]` con `q` de 80 caracteres (acepta) y de 81 (rechaza con mensaje de usuario), `%`, `_` y `\` tratados como texto literal, cuerpo mayor de 64 KB rechazado y JSON mal formado o profundo con 400 sin traza; debe fallar antes de T041
+- [X] T041 [US3] Limitar `q` a 80 caracteres y escapar `%`, `_` y `\` en `backend/src/main/java/es/citaclara/paciente/ServicioPacientes.java` y `RepositorioPaciente.java` (cláusula `ESCAPE`), y fijar tamaños máximos de cuerpo en `backend/src/main/resources/application.yml`
 
 #### Cambios tras la puerta G1 (tocan la spec 001)
 
@@ -301,5 +301,5 @@ Tarea: T013 EntradasMaliciosasTest en backend/src/test/java/es/citaclara/segurid
 
 - **Hechas**: informe, requisitos de pagos, pruebas de evidencia y de formato, corrección de H-03 (registros sin datos personales), controles de CI (OSV-Scanner, gitleaks, acciones por SHA, Dependabot) y plan de seguimiento.
 - **No hechas, por la puerta G1** (T042–T056: límite de intentos y usuarios individuales): requieren la aprobación del propietario de la 001; constan como `derivado` (solicitud S-001 en `specs/MAPA.md`).
-- **No hechas, por el límite de FR-020** (solo críticos y altos): T032–T041 (cabeceras, perfil de producción, límites de entrada), pasan al plan de seguimiento del informe. T035 tampoco.
+- **Hechas después, con la segunda ejecución**: T032–T034 y T036–T041 (cabeceras y límites en nginx, perfil `produccion`, límites de búsqueda). El límite de acceso quedó en 60 por minuto con ráfaga de 20, no 5 por minuto, porque la batería e2e inicia sesión decenas de veces. T035 (contenedores) sigue en el plan de seguimiento.
 - **Pendientes de una persona**: T003 (línea base e2e), T022 (revisión G0 por una persona ajena), T026 (contraste con la documentación vigente de Stripe), T072 (rama desechable en CI), T073 (reauditoría con el método del quickstart), T074 (flujo a mano en 360 px) y T062/T063 (registro de eventos, ligado a S-001).

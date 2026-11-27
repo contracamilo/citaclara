@@ -1,0 +1,18 @@
+# Spec 005 (H-05, H-06): ejemplo de despliegue SIN valores por defecto para secretos.
+#   DB_CLAVE=... docker compose -f docker-compose.yml -f docker-compose.produccion.yml up -d
+# Exige DB_CLAVE (el arranque falla si falta) y publica el servicio detrás de un proxy que termine TLS
+# (ahí se añade Strict-Transport-Security). No cargar nunca los datos de demostración en este entorno.
+x-entorno-api-produccion: &entorno-api-produccion
+  SPRING_PROFILES_ACTIVE: produccion
+  DB_URL: jdbc:postgresql://db:5432/citaclara
+  DB_USUARIO: citaclara
+  DB_CLAVE: ${DB_CLAVE:?Define DB_CLAVE con una contraseña propia}
+  COOKIE_SEGURA: "true"
+
+services:
+  db:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${DB_CLAVE:?Define DB_CLAVE con una contraseña propia}
+  api:
+    environment: *entorno-api-produccion

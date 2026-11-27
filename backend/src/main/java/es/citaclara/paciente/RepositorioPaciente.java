@@ -21,7 +21,7 @@ public interface RepositorioPaciente extends JpaRepository<Paciente, Long> {
     @Query(value = """
             SELECT * FROM paciente
             WHERE clinica_id = :clinicaId
-              AND (lower(inmutable_unaccent(nombre)) LIKE '%' || lower(inmutable_unaccent(:texto)) || '%'
+              AND (lower(inmutable_unaccent(nombre)) LIKE '%' || lower(inmutable_unaccent(:texto)) || '%' ESCAPE '\\'
                    OR (:cifras <> '' AND telefono LIKE '%' || :cifras || '%'))
             ORDER BY nombre, id
             LIMIT 20

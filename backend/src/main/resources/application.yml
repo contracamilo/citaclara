@@ -49,3 +49,17 @@ spring:
       on-profile: semilla
   main:
     web-application-type: none
+
+---
+# Spec 005 (H-05, H-06): sin valores por defecto de desarrollo; ValidacionProduccion los comprueba.
+spring:
+  config:
+    activate:
+      on-profile: produccion
+  datasource:
+    password: ${DB_CLAVE}
+server:
+  servlet:
+    session:
+      cookie:
+        secure: ${COOKIE_SEGURA:true}

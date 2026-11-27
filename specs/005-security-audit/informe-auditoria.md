@@ -92,7 +92,7 @@ El estado corresponde al commit auditado, antes de las correcciones de esta feat
 - **Mejora**: perfil `produccion` que exija `COOKIE_SEGURA=true`, terminación TLS documentada y `Strict-Transport-Security` activo solo con TLS
 - **Esfuerzo**: M
 - **Criterio de aceptación**: el arranque con perfil `produccion` falla si la cookie no es segura
-- **Estado**: abierto
+- **Estado**: corregido en lo que depende del código: el perfil `produccion` exige cookie segura; el TLS y HSTS los aporta el proxy que lo termine (`[005][FR-006]` en `PerfilProduccionTest`)
 - **Toca**: ninguna
 
 ### H-06 · Credenciales de base de datos por defecto
@@ -105,7 +105,7 @@ El estado corresponde al commit auditado, antes de las correcciones de esta feat
 - **Mejora**: perfil `produccion` sin valor por defecto, y un `docker-compose.produccion.yml` de ejemplo con secretos obligatorios
 - **Esfuerzo**: S
 - **Criterio de aceptación**: el arranque con perfil `produccion` falla con la contraseña de desarrollo
-- **Estado**: abierto
+- **Estado**: corregido (`[005][FR-006]` en `PerfilProduccionTest`; `docker-compose.produccion.yml` sin valores por defecto)
 - **Toca**: ninguna
 
 ### H-07 · Clave de demostración publicada y semilla sin salvaguarda
@@ -118,7 +118,7 @@ El estado corresponde al commit auditado, antes de las correcciones de esta feat
 - **Mejora**: la semilla se niega con perfil `produccion` y la clave de demostración deja de imprimirse fuera del perfil de demostración
 - **Esfuerzo**: S
 - **Criterio de aceptación**: la semilla termina con error en el perfil `produccion`
-- **Estado**: abierto
+- **Estado**: abierto (la semilla ya se niega con el perfil `produccion`, sin prueba automática todavía; la clave de demostración sigue documentada)
 - **Toca**: 001
 
 ### H-08 · nginx sin cabeceras de seguridad y con la versión visible
@@ -131,7 +131,7 @@ El estado corresponde al commit auditado, antes de las correcciones de esta feat
 - **Mejora**: las cabeceras de [contracts/cabeceras-seguridad.md](contracts/cabeceras-seguridad.md) y `server_tokens off`
 - **Esfuerzo**: S
 - **Criterio de aceptación**: `seguridad.spec.ts` comprueba las cabeceras en cada ruta y cero violaciones de la política de contenido
-- **Estado**: abierto
+- **Estado**: corregido (`[005][FR-005][FR-006]` en `seguridad.spec.ts`; HSTS queda para el proxy con TLS)
 - **Toca**: ninguna
 
 ### H-09 · Respuestas del API cacheables y sin `nosniff`
@@ -144,7 +144,7 @@ El estado corresponde al commit auditado, antes de las correcciones de esta feat
 - **Mejora**: `Cache-Control: no-store` y `nosniff` en todo `/api/**`
 - **Esfuerzo**: S
 - **Criterio de aceptación**: toda respuesta de `/api/**` lleva ambas cabeceras
-- **Estado**: abierto
+- **Estado**: corregido (`[005][FR-005][FR-006]` en `seguridad.spec.ts`)
 - **Toca**: ninguna
 
 ### H-10 · `X-Forwarded-For` suplantable
@@ -157,7 +157,7 @@ El estado corresponde al commit auditado, antes de las correcciones de esta feat
 - **Mejora**: fijar `X-Forwarded-For` a `$remote_addr`; imprescindible antes de limitar intentos por origen (H-01)
 - **Esfuerzo**: S
 - **Criterio de aceptación**: una petición con `X-Forwarded-For` falso llega al API con la dirección real
-- **Estado**: abierto
+- **Estado**: abierto (aplicado en `nginx.conf`, sin prueba automática todavía)
 - **Toca**: ninguna
 
 ### H-11 · Sin registro de eventos de seguridad
@@ -183,7 +183,7 @@ El estado corresponde al commit auditado, antes de las correcciones de esta feat
 - **Mejora**: longitud máxima de 80 caracteres y escape de `%`, `_` y `\`
 - **Esfuerzo**: S
 - **Criterio de aceptación**: `q` con `%` se trata como texto literal y con 81 caracteres se rechaza con un mensaje claro
-- **Estado**: abierto
+- **Estado**: corregido (`[005][FR-009]` en `LimitesEntradaTest`)
 - **Toca**: ninguna
 
 ### H-13 · Cadena de suministro sin controles automáticos
@@ -235,7 +235,7 @@ El estado corresponde al commit auditado, antes de las correcciones de esta feat
 - **Mejora**: `client_max_body_size 64k` y `limit_req` generoso en `/api/` y estricto en la ruta de acceso, sin rechazar el uso normal (FR-009)
 - **Esfuerzo**: S
 - **Criterio de aceptación**: un cuerpo de más de 64 KB se rechaza y una jornada de uso normal no recibe ningún 429
-- **Estado**: abierto
+- **Estado**: corregido (`[005][FR-009]` en `seguridad.spec.ts` para el 413; el 429 se comprobó a mano con 30 accesos seguidos y no hay prueba automática)
 - **Toca**: ninguna
 
 ## Plan de mejoras
@@ -292,23 +292,24 @@ Comparación con el informe inicial, en la rama de la feature (27/11/2026):
 |---|---|---|
 | H-03 datos personales en registros | alta, abierto | corregido, con prueba |
 | H-13 cadena de suministro | media, abierto | corregido salvo la cobertura de Maven |
+| H-05, H-06, H-08, H-09, H-12, H-16 | media, abiertos | corregidos, con prueba (H-05 depende además de un proxy con TLS) |
 | H-01, H-02, H-15 | alta, alta y baja | derivados a la 001 (S-001), pendientes de su propietario |
 | H-04 | alta | derivado (S-002) |
-| Resto (H-05 a H-12, H-14, H-16) | media y baja | abiertos, en el plan de seguimiento |
+| H-07, H-10, H-11, H-14 | media y baja | abiertos, en el plan de seguimiento |
 
-Resultado: de 16 hallazgos, 2 corregidos, 4 derivados y 10 abiertos. No queda ningún hallazgo crítico ni alto sin corregir o derivar con su solicitud registrada. SC-008 se cumple por la vía de la derivación, no por la corrección: **la clave compartida y la falta de límite de intentos siguen presentes hasta que el propietario de la 001 apruebe S-001**.
+Resultado: de 16 hallazgos, 8 corregidos, 4 derivados y 4 abiertos. No queda ningún hallazgo crítico ni alto sin corregir o derivar con su solicitud registrada. SC-008 se cumple por la vía de la derivación, no por la corrección: **la clave compartida y la falta de límite de intentos siguen presentes hasta que el propietario de la 001 apruebe S-001**.
 
 ## Plan de seguimiento
 
-Lo que esta feature no corrige (FR-020 limita las correcciones a críticos y altos que no cambian otras specs):
+Lo que esta feature no corrige:
 
 | Hallazgo | Severidad | Propietario propuesto | Esfuerzo | Nota |
 |---|---|---|---|---|
-| H-01, H-02, H-15 | alta, alta, baja | 001 (solicitud S-001) | M, L, S | Implementar tras aprobación; la 005 ya tiene escritas las condiciones de aceptación |
+| H-01, H-02, H-15 | alta, alta, baja | 001 (solicitud S-001) | M, L, S | Implementar tras aprobación; la condición de aceptación ya está escrita. Cuando exista, el límite por fallos sustituirá al límite de 60 accesos por minuto de nginx |
 | H-04 | alta | 001 y nueva spec `006-derechos-datos` (S-002) | L | Conservación de 5 años y derechos RGPD |
-| H-05, H-06, H-07 | media | nueva feature de despliegue | M | Perfil `produccion` que falla ante valores por defecto, TLS y semilla bloqueada |
-| H-08, H-09, H-10, H-16 | media y baja | la misma | S | Cabeceras de seguridad, `no-store`, `X-Forwarded-For` y límites de nginx; H-10 antes que H-01 |
+| H-05 (parte TLS) | media | despliegue | M | Proxy con TLS y `Strict-Transport-Security` |
+| H-07 | media | despliegue | S | Prueba automática de la negativa de la semilla y retirar la clave de demostración de los textos de producción |
+| H-10 | baja | despliegue | S | Prueba automática de `X-Forwarded-For` (ya aplicado) |
 | H-11 | media | acompaña a S-001 | M | Registro de eventos de seguridad |
-| H-12 | media | 001 (búsqueda) | S | Longitud máxima y escape de comodines |
-| H-14 | baja | despliegue | M | Contenedores sin privilegios y por *digest* |
+| H-14 | baja | despliegue | M | nginx sin privilegios, límites de recursos y *digest* en las imágenes |
 | Maven en OSV-Scanner | media | despliegue | S | Analizar con las versiones resueltas del BOM |

@@ -35,7 +35,7 @@ Si el *build* de la interfaz exige `style-src 'unsafe-inline'`, se documenta com
 | Tamaño del cuerpo (`client_max_body_size`) | 64 KB | `413`, mensaje sin jerga |
 | Longitud de `q` en búsqueda de pacientes | 80 caracteres | `400 DATOS_NO_VALIDOS` con texto para el usuario |
 | Peticiones a `/api/` por origen | 20 por segundo con ráfaga de 40 | `429` |
-| Peticiones a la ruta de acceso por origen | 5 por minuto con ráfaga de 5 | `429` con tiempo de espera |
+| Peticiones a la ruta de acceso por origen | 60 por minuto con ráfaga de 20 (ajustado: con 5 por minuto la batería e2e, que inicia sesión decenas de veces, se bloquea; el freno estricto por fallos es la solicitud S-001) | `429` con tiempo de espera |
 | Origen del cliente | nginx fija `X-Forwarded-For` con `$remote_addr` (sin concatenar el valor del cliente) | — |
 
 Los mensajes `429` y `413` los muestra la interfaz en español de España y sin códigos (Principio VII): «Has probado demasiadas veces. Espera unos minutos e inténtalo de nuevo.»
