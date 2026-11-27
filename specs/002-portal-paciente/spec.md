@@ -6,6 +6,8 @@
 
 **Estado**: Aprobada (27/11/2026, por el propietario de la feature 002; decisiones de producto cerradas por Sara el mismo día)
 
+**Excluidos de la trazabilidad**: SC-001 SC-002 (tiempos de pacientes sin instrucciones; se miden con personas, research R12)
+
 **Propietario**: feature 002-portal-paciente (registrado en `specs/MAPA.md`)
 
 **Entrada**: descripción del usuario: «Portal del paciente. Los pacientes de la clínica quieren ver sus citas y cancelarlas sin llamar por teléfono (Sonia, recepción de Eleva, dedica "la mitad de la mañana" a esto). Alcance: un paciente accede a una página personal moderna donde ve sus citas futuras y pasadas y puede cancelar una cita futura. Interfaz limpia y responsive, pensada para móvil. Preguntas que la spec debe dejar decididas (formúlalas cerradas, para Sara): cómo accede el paciente sin crear cuentas ni contraseñas (las clínicas pequeñas no van a gestionar altas), hasta cuándo puede cancelar, y qué pasa con el hueco liberado. Datos: cita casos reales de la semilla en los ejemplos. Fuera de alcance v1: reservar o mover citas online, pagos.»

@@ -12,6 +12,12 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  # Portal del paciente (002, research R2): SMTP del enlace de acceso. En local y e2e es Mailpit.
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PUERTO:1025}
+    username: ${SMTP_USUARIO:}
+    password: ${SMTP_CLAVE:}
   jackson:
     time-zone: UTC
 
@@ -35,6 +41,12 @@ logging:
     # traduce y se registra, sin valores, en ManejadorErrores.
     "[org.hibernate.orm.jdbc.error]": "OFF"
     "[org.hibernate.engine.jdbc.spi.SqlExceptionHelper]": "OFF"
+
+citaclara:
+  # 002, research R2 y R13: remitente de los correos y URL pública de los enlaces de acceso
+  # (nunca se toma de la cabecera Host).
+  email-remitente: ${EMAIL_REMITENTE:citas@citaclara.local}
+  url-publica: ${URL_PUBLICA:http://localhost:8080}
 
 management:
   endpoints:

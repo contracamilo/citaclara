@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type APIRequestContext, type Locator, type Page } from '@playwright/test';
+import { expect, type APIRequestContext, type Browser, type Locator, type Page, type TestInfo } from '@playwright/test';
 
 export const CLAVE = 'eleva-demo-2026';
 
@@ -199,4 +199,119 @@ export async function elegirPaciente(dialogo: Locator, busqueda: string, nombre:
 /** Texto visible normalizado (el formateador de euros usa espacio no separable antes de «€»). */
 export async function textoVisible(page: Page): Promise<string> {
   return (await page.locator('body').innerText()).replace(/ /g, ' ');
+}
+
+// ── Portal del paciente (002) ──
+
+const URL_CORREO = process.env.URL_CORREO ?? 'http://localhost:8025';
+const URL_BASE = process.env.URL_BASE ?? 'http://localhost:8080';
+
+interface MensajeMailpit {
+  ID: string;
+  Created: string;
+}
+
+/** Borra de Mailpit los correos de `email` (cada prueba lee solo el suyo). */
+export async function vaciarCorreo(email: string) {
+  const r = await fetch(`${URL_CORREO}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`, { method: 'DELETE' });
+  expect(r.ok, 'Mailpit no responde: ¿está levantado y URL_CORREO apunta a él?').toBe(true);
+}
+
+/**
+ * Ruta del último enlace de acceso enviado a `email` (`/eleva/mis-citas#enlace=…`), leída del API de
+ * Mailpit (research R2, FR-031). Espera hasta 10 s a que llegue el correo, que sale tras el commit.
+ */
+export async function ultimoEnlace(email: string): Promise<string> {
+  for (let intento = 0; intento < 40; intento++) {
+    const r = await fetch(`${URL_CORREO}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`);
+    const { messages } = (await r.json()) as { messages: MensajeMailpit[] };
+    if (messages.length > 0) {
+      const ultimo = [...messages].sort((a, b) => b.Created.localeCompare(a.Created))[0]!;
+      const mensaje = (await (await fetch(`${URL_CORREO}/api/v1/message/${ultimo.ID}`)).json()) as { Text: string };
+      const url = /https?:\/\/\S+#enlace=[A-Za-z0-9_-]+/.exec(mensaje.Text)?.[0];
+      if (!url) throw new Error('El correo no contiene un enlace de acceso');
+      return url.replace(/^https?:\/\/[^/]+/, '');
+    }
+    await new Promise((resuelve) => setTimeout(resuelve, 250));
+  }
+  throw new Error(`No ha llegado ningún enlace a ${email}`);
+}
+
+/** ¿Ha llegado algún correo a `email`? (espera breve: el envío es asíncrono). */
+export async function hayCorreoPara(email: string): Promise<boolean> {
+  await new Promise((resuelve) => setTimeout(resuelve, 1500));
+  const r = await fetch(`${URL_CORREO}/api/v1/search?query=${encodeURIComponent(`to:"${email}"`)}`);
+  return ((await r.json()) as { messages: unknown[] }).messages.length > 0;
+}
+
+/** Pide el enlace desde la pantalla de entrada del portal (contracts/ui.md §1). */
+export async function pedirEnlace(page: Page, email: string) {
+  await page.goto('/eleva/mis-citas');
+  await page.getByLabel('Tu email').fill(email);
+  await page.getByRole('button', { name: 'Enviarme el enlace' }).click();
+  await expect(page.getByText(/te hemos enviado un enlace para entrar/)).toBeVisible();
+}
+
+/** Entra en el portal como el paciente de `email` con el enlace recibido en Mailpit. */
+export async function entrarEnPortal(page: Page, email: string) {
+  await vaciarCorreo(email);
+  await pedirEnlace(page, email);
+  await page.goto(await ultimoEnlace(email));
+  await expect(page.getByRole('heading', { name: 'Próximas citas' })).toBeVisible();
+}
+
+/**
+ * Recepción en un contexto HTTP aparte: la sesión del panel y la del portal no conviven en el mismo
+ * navegador (research R4), así que las pruebas del portal preparan sus citas desde aquí.
+ */
+export async function recepcionAparte(playwright: { request: { newContext: (o: { baseURL: string }) => Promise<APIRequestContext> } }) {
+  const request = await playwright.request.newContext({ baseURL: URL_BASE });
+  const r = await request.post('/api/clinicas/eleva/sesion', { data: { clave: CLAVE } });
+  expect(r.status()).toBe(204);
+  return { request, api: new ApiPrueba(request) };
+}
+
+/** Crea una cita de `paciente` con `profesional` en un hueco libre a más de 24 h (desde el día laborable +2). */
+export async function citaFuturaPara(request: APIRequestContext, profesionalNombre: string, paciente: string) {
+  const api = new ApiPrueba(request);
+  const contexto = (await (await request.get('/api/sesion')).json()) as {
+    profesionales: Profesional[];
+    servicios: Array<{ id: number; nombre: string }>;
+  };
+  const profesional = await api.profesional(profesionalNombre);
+  const servicio = contexto.servicios.find((s) => s.nombre === 'Sesión fisioterapia')!;
+  const pacientes = (await (await request.get(`/api/pacientes?q=${encodeURIComponent(paciente)}`)).json()) as Array<{
+    id: number;
+    nombre: string;
+  }>;
+  const ficha = pacientes.find((p) => p.nombre === paciente)!;
+  const { fecha, inicio } = await api.huecoLibre(profesional, 45, undefined, 2);
+  const r = await request.post('/api/citas', {
+    data: { profesionalId: profesional.id, servicioId: servicio.id, pacienteId: ficha.id, fecha, horaInicio: inicio },
+  });
+  expect(r.status(), await r.text()).toBe(201);
+  const cita = (await r.json()) as Cita;
+  return { fecha, profesional, cita };
+}
+
+/**
+ * Página en un contexto de navegador aparte (otra «persona»: p. ej. recepción mientras el paciente usa
+ * `page`), con el viewport, la zona y la URL base del proyecto en curso.
+ */
+export async function paginaAislada(browser: Browser, testInfo: TestInfo): Promise<Page> {
+  const { viewport, isMobile, hasTouch, locale, timezoneId, userAgent, deviceScaleFactor } = testInfo.project.use;
+  const contexto = await browser.newContext({ viewport, isMobile, hasTouch, locale, timezoneId, userAgent, deviceScaleFactor, baseURL: URL_BASE });
+  return contexto.newPage();
+}
+
+/** Fecha larga «martes, 01/12/2026» como la del formateador único (formato/fechas.ts). */
+export function fechaLarga(fecha: string): string {
+  const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const [a, m, d] = fecha.split('-');
+  return `${dias[new Date(`${fecha}T12:00:00Z`).getUTCDay()]}, ${d}/${m}/${a}`;
+}
+
+/** Tarjeta de una cita en el portal por fecha y franja (únicas para un mismo paciente). */
+export function tarjetaPortal(dentro: Page | Locator, fecha: string, horaInicio: string, horaFin: string): Locator {
+  return dentro.getByRole('article').filter({ hasText: fechaLarga(fecha) }).filter({ hasText: `${horaInicio}–${horaFin}` });
 }

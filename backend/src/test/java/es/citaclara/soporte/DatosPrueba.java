@@ -117,6 +117,26 @@ public class DatosPrueba {
         return new OtraClinica(clinica, profesional, servicio, paciente);
     }
 
+    /**
+     * Escenario del portal (002): el de {@link #escenario()} más Teresa Méndez, Laura Romero, una
+     * segunda ficha con el email de Laura («Hijo de Laura»), un paciente sin email y, en otra
+     * clínica, un paciente con el email de Teresa.
+     */
+    public EscenarioPortal escenarioPortal() {
+        Escenario e = escenario();
+        long teresa = paciente(e.clinica(), "Teresa Méndez", "+34600001433", "teresa.mendez@ejemplo.es");
+        long laura = paciente(e.clinica(), "Laura Romero", "+34600000471", "laura.romero@ejemplo.es");
+        long hijoLaura = paciente(e.clinica(), "Hijo de Laura", "+34600000999", "Laura.Romero@ejemplo.es ");
+        long sinEmail = paciente(e.clinica(), "Gonzalo Cruz", "+34600001470", null);
+        OtraClinica otra = otraClinica();
+        long teresaOtra = paciente(otra.clinica(), "Teresa Méndez", "+34600001433", "teresa.mendez@ejemplo.es");
+        return new EscenarioPortal(e, otra, teresa, laura, hijoLaura, sinEmail, teresaOtra);
+    }
+
+    public record EscenarioPortal(Escenario e, OtraClinica otra, long teresa, long laura, long hijoLaura,
+                                  long sinEmail, long teresaOtraClinica) {
+    }
+
     public record Escenario(long clinica, long maria, long jorge, long lucia,
                             long sesionFisio, long primeraFisio, long consultaNutri, long primeraNutri,
                             long ana, long luciaGomez, long pedro) {

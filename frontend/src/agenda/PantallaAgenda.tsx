@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { LogOut, Plus } from 'lucide-react';
+import { AvisoCancelaciones } from '../cancelaciones/AvisoCancelaciones';
 import { api, ErrorApi, esErrorAbort, MENSAJE_ERROR_GENERICO } from '../api/cliente';
 import type { Agenda, Cita, Contexto } from '../api/tipos';
 import { DialogoAltaCita } from '../citas/DialogoAltaCita';
@@ -136,9 +137,13 @@ export function PantallaAgenda({ contexto, identificador, onSalir }: PropsPantal
       <header className="sticky top-0 z-10 border-b border-borde bg-superficie/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 pt-2">
           <h1 className="min-w-0 truncate text-base font-bold">{contexto.clinica.nombre}</h1>
-          <Boton variante="fantasma" icono={<LogOut aria-hidden="true" className="size-4" />} onClick={cerrarSesion}>
-            Cerrar sesión
-          </Boton>
+          <div className="flex shrink-0 items-center gap-1">
+            {/* 002 (US4, SC-008): se vuelve a pedir al cambiar de profesional o de día. */}
+            <AvisoCancelaciones clave={`${vista.profesionalId ?? ''}|${fechaActual}`} />
+            <Boton variante="fantasma" icono={<LogOut aria-hidden="true" className="size-4" />} onClick={cerrarSesion}>
+              Cerrar sesión
+            </Boton>
+          </div>
         </div>
         {identificador && (
           <nav aria-label="Secciones del panel" className="mx-auto flex max-w-3xl gap-2 px-4 pt-1">

@@ -25,6 +25,13 @@ public class ConfiguracionPruebas {
         return new PostgreSQLContainer(DockerImageName.parse(IMAGEN_POSTGRES));
     }
 
+    /** Sustituye al envío SMTP del portal (002, research R2): guarda los enlaces en memoria. */
+    @Bean
+    @Primary
+    BuzonPrueba buzonPrueba() {
+        return new BuzonPrueba();
+    }
+
     @Bean
     RelojControlable relojControlable() {
         return new RelojControlable(DatosPrueba.AHORA_POR_DEFECTO.toInstant());

@@ -133,6 +133,10 @@ describe('NavegadorDia', () => {
   });
 });
 
+/** Primera petición de agenda (002: el aviso de cancelaciones de la cabecera también pide datos). */
+const primeraAgenda = (espia: { mock: { calls: unknown[][] } }) =>
+  espia.mock.calls.map(([u]) => String(u)).find((u) => u.startsWith('/api/agenda'));
+
 describe('PantallaAgenda', () => {
   it('[001][FR-005][US1-AC3] abre la agenda de hoy del primer profesional y al cambiar de profesional conserva la fecha en la query string', async () => {
     window.history.replaceState(null, '', '/eleva');
@@ -146,7 +150,7 @@ describe('PantallaAgenda', () => {
     render(<PantallaAgenda contexto={contexto} onSalir={() => undefined} />);
 
     expect(await screen.findByRole('heading', { name: 'Agenda de María' })).toBeInTheDocument();
-    expect(String(espia.mock.calls[0]![0])).toBe('/api/agenda?profesionalId=2'); // sin fecha: hoy del servidor
+    expect(primeraAgenda(espia)).toBe('/api/agenda?profesionalId=2'); // sin fecha: hoy del servidor
     expect(screen.getByText('jueves, 26/11/2026')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Día siguiente' }));
@@ -169,7 +173,7 @@ describe('PantallaAgenda', () => {
     });
     render(<PantallaAgenda contexto={contexto} onSalir={() => undefined} />);
     expect(await screen.findByRole('heading', { name: 'Agenda de Jorge' })).toBeInTheDocument();
-    expect(String(espia.mock.calls[0]![0])).toBe('/api/agenda?profesionalId=1&fecha=2026-11-30');
+    expect(primeraAgenda(espia)).toBe('/api/agenda?profesionalId=1&fecha=2026-11-30');
     expect(screen.getByText('lunes, 30/11/2026')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Día siguiente' }));

@@ -7,6 +7,7 @@ import type { Contexto } from './api/tipos';
 import { identificadorDeRuta, vistaDeRuta } from './navegacion';
 import { Aviso } from './ui/Aviso';
 import { Boton } from './ui/Boton';
+import { AppPortal } from './portal/AppPortal';
 
 type Estado =
   | { tipo: 'cargando' }
@@ -16,12 +17,25 @@ type Estado =
 
 export { identificadorDeRuta, vistaDeRuta };
 
+/** `/eleva/mis-citas` → portal del paciente (002, research R10). */
+export function esRutaPortal(ruta: string): boolean {
+  return ruta.split('/').filter(Boolean)[1] === 'mis-citas';
+}
+
 /**
  * Raíz de la aplicación, sin enrutador ni estado global (research D15): la vista depende de la
- * sesión; el profesional y el día viven en la query string (PantallaAgenda).
+ * sesión; el profesional y el día viven en la query string (PantallaAgenda). La dirección
+ * `/{identificador}/mis-citas` monta el portal del paciente (002), con su propia sesión.
  */
 export function App() {
   const identificador = identificadorDeRuta(window.location.pathname);
+  if (identificador && esRutaPortal(window.location.pathname)) {
+    return <AppPortal identificador={identificador} />;
+  }
+  return <Panel identificador={identificador} />;
+}
+
+function Panel({ identificador }: { identificador: string }) {
   const vista = vistaDeRuta(window.location.pathname);
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
 

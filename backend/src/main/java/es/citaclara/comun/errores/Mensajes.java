@@ -15,6 +15,17 @@ public final class Mensajes {
     public static final String HORA_INEXISTENTE =
             "Esa hora no existe ese día por el cambio de horario. Elige otra hora.";
 
+    // Portal del paciente (002, contracts/api.yaml).
+    public static final String EMAIL_NO_VALIDO = "Escribe un email válido, por ejemplo nombre@correo.es.";
+    public static final String ENLACES_AGOTADOS =
+            "Has pedido demasiados enlaces. Espera unos minutos y vuelve a probar.";
+    public static final String ENLACE_NO_VALIDO = "Este enlace ya no es válido. Pide uno nuevo.";
+    public static final String SIN_SESION_PORTAL = "Entra con el enlace que te enviamos por email para ver tus citas.";
+    public static final String SESION_PORTAL_CADUCADA = "Tu acceso ha caducado. Pide un enlace nuevo para ver tus citas.";
+    public static final String FUERA_DE_PLAZO =
+            "Faltan menos de 24 horas para esta cita. Para cancelarla, llama a la clínica.";
+    public static final String CITA_PORTAL_YA_CAMBIADA = "Esta cita acaba de cambiar. Revisa su estado.";
+
     private Mensajes() {
     }
 }

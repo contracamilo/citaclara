@@ -4,10 +4,10 @@ Panel de recepción para clínicas pequeñas. Proceso: Spec Kit (`specs/`, `spec
 
 ## Comandos
 
-- Entorno: `docker compose up -d --build` (web en `http://localhost:8080`; `PUERTO_WEB=8081` si el 8080 está ocupado) y `docker compose run --rm semilla` para cargar Clínica Eleva (clave `eleva-demo-2026`).
+- Entorno: `docker compose up -d --build` (web en `http://localhost:8080`; `PUERTO_WEB=8081` si el 8080 está ocupado) y `docker compose run --rm semilla` para cargar Clínica Eleva (clave `eleva-demo-2026`). Portal del paciente en `/eleva/mis-citas`; los enlaces llegan a Mailpit (`http://localhost:8025`, `PUERTO_CORREO`).
 - Backend (JDK 25, Docker en marcha para Testcontainers): `cd backend && ./mvnw verify`.
 - Desarrollo local: `docker compose up -d db` (PostgreSQL en `127.0.0.1:5433`, `PUERTO_DB`), backend con `DB_URL=jdbc:postgresql://localhost:5433/citaclara ./mvnw spring-boot:run` (`PUERTO`) y `npm run dev` (`URL_API` si el backend no está en el 8080). Detalle en `README.md`.
-- Frontend: `cd frontend && npm ci && npm test`; e2e contra el entorno levantado: `URL_BASE=http://localhost:8080 npm run e2e`.
+- Frontend: `cd frontend && npm ci && npm test`; e2e contra el entorno levantado: `URL_BASE=http://localhost:8080 URL_CORREO=http://localhost:8025 npm run e2e`.
 - CI: `.github/workflows/ci.yml` (trazabilidad, backend, frontend y e2e con `docker compose`) en cada PR.
 - Trazabilidad spec ↔ tests: `./scripts/trazabilidad.sh [specs/NNN-…]` (debe salir vacía).
 
@@ -40,3 +40,9 @@ Panel de recepción para clínicas pequeñas. Proceso: Spec Kit (`specs/`, `spec
 - [004] Semanas lunes–domingo en `Europe/Madrid` (`ZonaClinica`, «hoy» del `Clock` inyectado); el periodo son las 8 semanas completas anteriores a la actual. Las cifras semanales de la semilla solo se reproducen cargándola en lunes: los tests fijan el reloj en el lunes 30/11/2026 y los e2e no comparan cifras literales.
 - [004] Gráficos propios en HTML/CSS (sin librería), como `<ul aria-label>` con el valor siempre visible en texto; navegación entre vistas con `<a>` y `navegacion.ts` (`/{identificador}/analitica`), sin enrutador.
 - [004] Toda spec nueva con algún SC que se mida con personas debe declarar la línea `**Excluidos de la trazabilidad**:` (ver [005]).
+- [002] La sesión del portal del paciente (`portal/acceso/SesionPortal`, 30 min absolutos, `InterceptorPortal` en `/api/portal/**`) es independiente de la del panel: ninguna abre la otra y, en un mismo navegador, abrir una invalida la otra. Un nuevo tipo de usuario añade su propia sesión e interceptor, nunca atributos en la del panel.
+- [002] Secretos de un solo uso (enlaces de acceso): solo se guarda su SHA-256 y se consumen con un único `UPDATE … RETURNING` condicionado a no usado y no caducado; el secreto viaja en el fragmento `#…` de la URL y lo envía el frontend por POST.
+- [002] Toda respuesta que no deba revelar si algo existe (p. ej. un email) es idéntica en ambos casos y sus límites de frecuencia cuentan también lo inexistente (se registra cada solicitud).
+- [002] Todo correo sale por un puerto propio (`CorreoPortal`) desde un `@TransactionalEventListener(AFTER_COMMIT)` + `@Async`; en pruebas lo sustituye `soporte/BuzonPrueba` (`citaclara.correo.asincrono=false`) y en local/e2e Mailpit. Nunca se registra un email, un secreto ni una URL con secreto.
+- [002] La información propia de una feature sobre una cita (p. ej. quién la canceló) vive en tablas de la feature con FK compuesta `(cita_id, clinica_id)`, no en columnas de `cita`; las transiciones se reutilizan desde `ServicioEstadoCita` (p. ej. `cancelarDesdePortal` + `ComprobacionPortal`), sin duplicar `MaquinaEstadosCita`.
+- [002] e2e del portal: la sesión del portal y la del panel no conviven en un navegador, así que las pruebas preparan sus citas con `recepcionAparte` (contexto HTTP aparte) y cada email de la semilla se usa en pocas pruebas para no superar 5 enlaces por hora con los dos proyectos de Playwright.
