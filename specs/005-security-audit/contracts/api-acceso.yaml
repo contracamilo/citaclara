@@ -1,0 +1,115 @@
+openapi: 3.1.0
+info:
+  title: CitaClara — cambios del API de acceso (005-security-audit)
+  version: 0.2.0-propuesta
+  description: |
+    PROPUESTA sujeta a la puerta G1 del plan: modifica el contrato de la spec 001
+    (`specs/001-nucleo-agenda/contracts/api.yaml`, operación `iniciarSesion`) y por tanto necesita la
+    aprobación previa de su propietario y la actualización de esa spec (Principio I).
+    No se implementa hasta entonces. Cubre FR-004, FR-021 y FR-009 de la spec 005.
+
+    Se conserva todo lo de la 001: mismo origen, cookie `HttpOnly` + `SameSite=Strict`,
+    solo JSON en POST, errores Problem Details con `codigo` (para el programa) y `mensaje`
+    (español de España, apto para mostrarse tal cual).
+servers:
+  - url: /api
+
+paths:
+  /clinicas/{identificador}/sesion:
+    post:
+      summary: Acceder al panel con usuario y clave (sustituye a la clave compartida de la clínica)
+      operationId: iniciarSesion
+      parameters:
+        - name: identificador
+          in: path
+          required: true
+          schema: { type: string, pattern: '^[a-z0-9-]{1,40}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuario, clave]
+              properties:
+                usuario: { type: string, minLength: 1, maxLength: 60, example: recepcion }
+                clave: { type: string, minLength: 1, maxLength: 200 }
+      responses:
+        '204':
+          description: Acceso concedido. Fija la cookie de sesión (válida 8 h desde ahora). Registra el evento `ACCESO_CORRECTO` con el usuario.
+        '401':
+          description: |
+            Usuario o clave incorrectos, usuario inactivo o clínica inexistente: **misma respuesta y mismo coste**
+            para no revelar cuál falla. `codigo = CREDENCIALES_INCORRECTAS`,
+            `mensaje = «El usuario o la clave no son correctos. Revísalos e inténtalo de nuevo.»`
+        '429':
+          description: |
+            Demasiados intentos fallidos desde ese origen o para esa clínica. Incluye `Retry-After` (segundos).
+            `codigo = ACCESO_BLOQUEADO`,
+            `mensaje = «Has probado demasiadas veces. Espera N minutos e inténtalo de nuevo.»`.
+            Mientras dure el bloqueo, **tampoco** se acepta una clave correcta desde ese origen.
+          headers:
+            Retry-After: { schema: { type: integer } }
+        '400':
+          description: Cuerpo inválido (`DATOS_NO_VALIDOS`).
+        '415':
+          description: Cuerpo no JSON (`TIPO_NO_ADMITIDO`), como en la 001.
+
+  /sesion:
+    get:
+      summary: Quién soy (para mostrar el nombre en el panel y renovar la interfaz)
+      operationId: obtenerSesion
+      responses:
+        '200':
+          description: Sesión válida
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [nombreUsuario, rol, caducaA]
+                properties:
+                  nombreUsuario: { type: string, example: Marta López }
+                  rol: { type: string, enum: [RECEPCION, ADMINISTRACION] }
+                  caducaA: { type: string, format: date-time }
+        '401':
+          description: Sin sesión o caducada (`SIN_SESION` / `SESION_CADUCADA`), como en la 001.
+    delete:
+      summary: Cerrar sesión (sin cambios respecto a la 001; siempre 204)
+      responses:
+        '204': { description: Sesión cerrada }
+
+  /usuarios:
+    get:
+      summary: Listar usuarios de la clínica (solo ADMINISTRACION)
+      operationId: listarUsuarios
+      responses:
+        '200': { description: Lista de usuarios de la clínica de la sesión }
+        '403': { description: Rol insuficiente (`PERMISO_INSUFICIENTE`, «No tienes permiso para hacer esto.») }
+    post:
+      summary: Crear usuario (solo ADMINISTRACION)
+      operationId: crearUsuario
+      responses:
+        '201': { description: Usuario creado }
+        '409': { description: Nombre de usuario ya existente en la clínica }
+
+  /usuarios/{id}/revocacion:
+    post:
+      summary: Revocar el acceso de un usuario sin afectar al resto (solo ADMINISTRACION)
+      operationId: revocarUsuario
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '204': { description: Usuario inactivo; su sesión deja de valer en la siguiente petición }
+        '404': { description: Usuario inexistente o de otra clínica (misma respuesta) }
+
+components:
+  schemas:
+    Problem:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo: { type: string }
+        mensaje: { type: string }
