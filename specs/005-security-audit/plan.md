@@ -45,7 +45,7 @@ Todas las incógnitas están resueltas en [research.md](research.md) (D1–D18);
 
 | Principio / regla | Cumplimiento en este plan | Estado |
 |---|---|---|
-| **I. Spec primero** | Todo sale de `spec.md` con trazabilidad FR→fase (tabla más abajo). Lo que cambia la spec 001 (limitación de intentos, usuarios individuales, contrato público de clínica, datos del paciente) queda tras la puerta **G1**: se pide al propietario que la apruebe y actualice **antes** de tocar el código. La spec 005 queda registrada en `specs/MAPA.md`. | ✅ condicionado a G1 |
+| **I. Spec primero** | La spec está en «Borrador» hasta que su propietario la apruebe (tarea T001; nada se implementa antes). Todo sale de `spec.md` con trazabilidad FR→fase (tabla más abajo). Lo que cambia la spec 001 (limitación de intentos, usuarios individuales, contrato público de clínica, datos del paciente) queda tras la puerta **G1**: se pide al propietario que la apruebe y actualice **antes** de tocar el código. La spec 005 queda registrada en `specs/MAPA.md`. | ✅ condicionado a G1 |
 | **II. Los números no admiten creatividad** | Ninguna corrección toca importes ni fechas. Los requisitos de pagos fijan céntimos enteros, importe decidido por el servidor y conciliación al céntimo (RP-004, RP-005). Los plazos de bloqueo usan el `Clock` inyectado. | ✅ |
 | **III. El solape es el fallo capital** | No se escribe en la agenda. Los usuarios individuales no cambian el camino de alta; el alta conserva `FOR UPDATE` y la restricción `cita_sin_solape`. La suite 001 de solape y concurrencia se ejecuta íntegra y debe seguir en verde tras cada fase (puerta de merge 3). | ✅ |
 | **IV. Simplicidad y cero alcance fantasma** | Sin SDK de Stripe, sin Spring Security completo, sin Bucket4j, sin SIEM, sin SSO. Se descarta la anonimización automática y los endpoints RGPD de esta feature (D14) y se proponen como spec de seguimiento. Cada herramienta de CI se vincula a FR-016 (tabla de dependencias). | ✅ |
@@ -117,7 +117,6 @@ docker-compose.produccion.yml    # NUEVO: ejemplo sin secretos por defecto (D12)
 └── dependabot.yml               # NUEVO
 scripts/
 ├── trazabilidad.sh              # Acepta ambas redacciones de encabezado y exclusiones de la spec (D15)
-└── verificar-informe.sh         # NUEVO: envoltorio para ejecutar InformeAuditoriaTest en local
 ```
 
 **Decisión de estructura**: el backend sigue organizado por capacidad de dominio ([001]); el código transversal de seguridad vive en su propio paquete `seguridad` y lo específico de acceso permanece en `acceso`, de modo que las features 002–004 pueden reutilizar el registro de eventos sin depender de `acceso`.
@@ -152,7 +151,7 @@ Cubre H1, H4–H10, H12, H13 si se confirman como críticos o altos; el resto pa
 
 ### Fase 3 — Correcciones que cambian la spec 001 (tras la puerta G1)
 
-Cubre H2, H3, H11 · FR-014, FR-021 · US3 · SC-006, SC-008. **No empieza sin la aprobación del propietario de la 001 y la actualización de su spec.**
+Cubre H2, H3, H11 · FR-014, FR-021, FR-022 · US3 · SC-006, SC-008. **No empieza sin la aprobación del propietario de la 001 y la actualización de su spec.**
 
 1. Solicitar al propietario de la 001 los cambios (limitación de intentos en su FR-004, usuarios individuales en su FR-001/FR-002, contrato público de clínica) con el texto propuesto; esperar su aprobación y su actualización de spec.
 2. `V2`: tabla de intentos de acceso y purga; servicio de bloqueo con `Clock`; respuesta `429` con mensaje comprensible; pruebas con reloj controlable y con intentos simultáneos.
@@ -180,7 +179,7 @@ Cubre FR-018, FR-013, SC-008, SC-009.
 | FR-015 | 2, 3 y 4 |
 | FR-016 | 2 |
 | FR-020 | 2 |
-| FR-021 | 3 |
+| FR-021, FR-022 | 3 |
 
 ## Seguimiento de complejidad
 

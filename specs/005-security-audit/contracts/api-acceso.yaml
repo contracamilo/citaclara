@@ -6,7 +6,7 @@ info:
     PROPUESTA sujeta a la puerta G1 del plan: modifica el contrato de la spec 001
     (`specs/001-nucleo-agenda/contracts/api.yaml`, operación `iniciarSesion`) y por tanto necesita la
     aprobación previa de su propietario y la actualización de esa spec (Principio I).
-    No se implementa hasta entonces. Cubre FR-004, FR-021 y FR-009 de la spec 005.
+    No se implementa hasta entonces. Cubre FR-021 (usuarios individuales) y FR-022 (limitación de intentos) de la spec 005.
 
     Se conserva todo lo de la 001: mismo origen, cookie `HttpOnly` + `SameSite=Strict`,
     solo JSON en POST, errores Problem Details con `codigo` (para el programa) y `mensaje`

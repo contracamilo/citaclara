@@ -32,4 +32,5 @@
 ## Notes
 
 - Stripe, OWASP, RGPD y PCI DSS son marcos normativos del dominio, no detalles de implementación.
-- Alcance confirmado en clarificación (2026-11-27): informe + plan + corrección de críticos y altos que no afecten a specs ajenas.
+- Alcance confirmado en clarificación (2026-11-27): informe + plan + corrección de críticos y altos que no afecten a specs ajenas, y, con la aprobación del propietario de la 001, usuarios individuales (FR-021) y limitación de intentos (FR-022).
+- Spec traducida al español de España (Principio VIII) con los mismos encabezados que la 001; sigue en «Borrador» hasta su aprobación (tarea T001).

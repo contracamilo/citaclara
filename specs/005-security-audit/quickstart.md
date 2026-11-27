@@ -56,7 +56,7 @@ Cada fila cita el requisito o escenario que demuestra.
 
 | # | Pasos | Resultado esperado | Spec |
 |---|---|---|---|
-| 15 | Fallar el acceso repetidamente desde un origen. | Bloqueo con «Has probado demasiadas veces. Espera N minutos…»; tampoco entra con la clave buena durante el bloqueo; pasado el tiempo (reloj controlado) vuelve a entrar. | FR-004 |
+| 15 | Fallar el acceso repetidamente desde un origen. | Bloqueo con «Has probado demasiadas veces. Espera N minutos…»; tampoco entra con la clave buena durante el bloqueo; pasado el tiempo (reloj controlado) vuelve a entrar. | FR-022 |
 | 16 | Entrar con dos usuarios y revocar uno. | El revocado pierde el acceso en la siguiente petición; el otro sigue. | FR-021 |
 | 17 | Repetir el escenario 14. | Igual de usable que antes, con un campo más (usuario). | SC-009 |
 
