@@ -6,7 +6,9 @@ Panel de recepción para clínicas pequeñas. Proceso: Spec Kit (`specs/`, `spec
 
 - Entorno: `docker compose up -d --build` (web en `http://localhost:8080`; `PUERTO_WEB=8081` si el 8080 está ocupado) y `docker compose run --rm semilla` para cargar Clínica Eleva (clave `eleva-demo-2026`).
 - Backend (JDK 25, Docker en marcha para Testcontainers): `cd backend && ./mvnw verify`.
+- Desarrollo local: `docker compose up -d db` (PostgreSQL en `127.0.0.1:5433`, `PUERTO_DB`), backend con `DB_URL=jdbc:postgresql://localhost:5433/citaclara ./mvnw spring-boot:run` (`PUERTO`) y `npm run dev` (`URL_API` si el backend no está en el 8080). Detalle en `README.md`.
 - Frontend: `cd frontend && npm ci && npm test`; e2e contra el entorno levantado: `URL_BASE=http://localhost:8080 npm run e2e`.
+- CI: `.github/workflows/ci.yml` (trazabilidad, backend, frontend y e2e con `docker compose`) en cada PR.
 - Trazabilidad spec ↔ tests: `./scripts/trazabilidad.sh [specs/NNN-…]` (debe salir vacía).
 
 ## Decisiones y convenciones transversales
