@@ -5,6 +5,7 @@ import { api, ErrorApi, esErrorAbort, MENSAJE_ERROR_GENERICO } from '../api/clie
 import type { Agenda, Cita, Contexto } from '../api/tipos';
 import { DialogoAltaCita } from '../citas/DialogoAltaCita';
 import { esFechaValida } from '../formato/fechas';
+import { rutaAnalitica } from '../navegacion';
 import { Aviso } from '../ui/Aviso';
 import { Boton } from '../ui/Boton';
 import { LineaTiempo } from './LineaTiempo';
@@ -13,6 +14,8 @@ import { SelectorProfesional } from './SelectorProfesional';
 
 interface PropsPantallaAgenda {
   contexto: Contexto;
+  /** Identificador de la clínica de la ruta; habilita el enlace «Analítica». */
+  identificador?: string;
   onSalir: () => void;
 }
 
@@ -39,7 +42,7 @@ function puedeAnimar(): boolean {
 }
 
 /** Agenda del día de un profesional (US1) con alta de citas (US2) y cambios de estado (US3). */
-export function PantallaAgenda({ contexto, onSalir }: PropsPantallaAgenda) {
+export function PantallaAgenda({ contexto, identificador, onSalir }: PropsPantallaAgenda) {
   const [vista, setVista] = useState<Vista>(() => leerVista(contexto));
   const [agenda, setAgenda] = useState<Agenda | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -137,6 +140,24 @@ export function PantallaAgenda({ contexto, onSalir }: PropsPantallaAgenda) {
             Cerrar sesión
           </Boton>
         </div>
+        {identificador && (
+          <nav aria-label="Secciones del panel" className="mx-auto flex max-w-3xl gap-2 px-4 pt-1">
+            <a
+              href="#"
+              aria-current="page"
+              onClick={(e) => e.preventDefault()}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl bg-acento-suave px-4 text-sm font-semibold"
+            >
+              Agenda
+            </a>
+            <a
+              href={rutaAnalitica(identificador)}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl px-4 text-sm font-semibold hover:bg-superficie-2"
+            >
+              Analítica
+            </a>
+          </nav>
+        )}
         <div className="mx-auto flex max-w-3xl flex-col gap-2 px-4 pt-1 pb-3">
           <SelectorProfesional
             profesionales={contexto.profesionales}
