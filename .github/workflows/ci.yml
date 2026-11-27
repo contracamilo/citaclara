@@ -21,6 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - run: ./scripts/trazabilidad.sh
+      - run: ./scripts/trazabilidad.sh specs/004-panel-analitica
 
   seguridad:
     name: Seguridad (dependencias y secretos)
