@@ -108,3 +108,54 @@ export interface Problema {
   citaActual?: Cita;
   pacienteExistente?: Paciente;
 }
+
+/* ---------------------------------------------------------------------------------------------
+ * Analítica (specs/004-panel-analitica/contracts/api.yaml). El cliente NO recalcula porcentajes.
+ * ------------------------------------------------------------------------------------------- */
+
+/** Cociente exacto; `decimas` es el porcentaje por diez (93 = 9,3 %) o `null` si `total` es 0. */
+export interface Proporcion {
+  parte: number;
+  total: number;
+  decimas: number | null;
+}
+
+/** Lunes y domingo, fechas locales `YYYY-MM-DD`. */
+export interface Semana {
+  inicio: FechaLocal;
+  fin: FechaLocal;
+}
+
+export interface ProfesionalAnalitica {
+  profesionalId: number;
+  nombre: string;
+  especialidadNombre: string;
+  tasaNoAsistencia: Proporcion;
+  ocupacion: Proporcion;
+}
+
+export interface ServicioIngresos {
+  servicioId: number;
+  nombre: string;
+  citasCompletadas: number;
+  importeCentimos: number;
+  citasNoAsistidas: number;
+  importeNoObtenidoCentimos: number;
+}
+
+export interface SemanaEvolucion {
+  semana: Semana;
+  completadas: number;
+  noAsistidas: number;
+  canceladas: number;
+  tasaNoAsistencia: Proporcion;
+  ingresosCentimos: number;
+  ocupacion: Array<{ profesionalId: number; ocupacion: Proporcion }>;
+}
+
+export interface Analitica {
+  sinDatos: boolean;
+  ultimaSemana: { semana: Semana; profesionales: ProfesionalAnalitica[] };
+  ingresos: { servicios: ServicioIngresos[]; totalCentimos: number; totalNoObtenidoCentimos: number };
+  evolucion: SemanaEvolucion[];
+}
