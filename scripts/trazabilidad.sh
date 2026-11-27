@@ -16,10 +16,14 @@ numero="$(basename "$carpeta" | cut -d- -f1)"
 [ -f "$spec" ] || { echo "No existe $spec" >&2; exit 2; }
 
 # Criterios que no se pueden automatizar (se miden con personas reales, no son comportamiento del
-# producto). Cada spec los declara en una línea «**Excluidos de la trazabilidad**: SC-nnn …»; si no
-# la tiene, se usan los de la spec 001 (SC-004, SC-005, SC-006).
-excluidos="$(grep -m1 -E '^\*\*Excluidos de la trazabilidad\*\*:' "$spec" | sed -E 's/^[^:]*:[[:space:]]*//' || true)"
-excluidos="${excluidos:-SC-004 SC-005 SC-006}"
+# producto). Cada spec los declara en una línea «**Excluidos de la trazabilidad**: SC-nnn …» (005, 004);
+# solo se toman los identificadores SC-nnn de la línea. La 001 no la tiene y conserva su lista
+# histórica (SC-004, SC-005, SC-006); una spec sin la línea no excluye nada.
+excluidos="$(grep -m1 -E '^\*\*Excluidos de la trazabilidad\*\*:' "$spec" | sed -E 's/^[^:]*://' | grep -oE 'SC-[0-9]{3}' | tr '
+' ' ' | sed 's/ $//' || true)"
+if [ -z "$excluidos" ] && [ "$numero" = "001" ]; then
+  excluidos="SC-004 SC-005 SC-006"
+fi
 
 # 1. Identificadores de la spec.
 requisitos="$(grep -oE '\*\*(FR|SC)-[0-9]{3}' "$spec" | tr -d '*' | sort -u)"

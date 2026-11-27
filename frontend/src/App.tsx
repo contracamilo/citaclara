@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { PantallaAcceso } from './acceso/PantallaAcceso';
 import { PantallaAgenda } from './agenda/PantallaAgenda';
+import { PantallaAnalitica } from './analitica/PantallaAnalitica';
 import { api, ErrorApi, EVENTO_SESION_PERDIDA, MENSAJE_ERROR_GENERICO } from './api/cliente';
 import type { Contexto } from './api/tipos';
+import { identificadorDeRuta, vistaDeRuta } from './navegacion';
 import { Aviso } from './ui/Aviso';
 import { Boton } from './ui/Boton';
 
@@ -12,15 +14,7 @@ type Estado =
   | { tipo: 'agenda'; contexto: Contexto }
   | { tipo: 'error'; mensaje: string };
 
-/** `/eleva?profesional=1` → «eleva». */
-export function identificadorDeRuta(ruta: string): string {
-  const primero = ruta.split('/').filter(Boolean)[0] ?? '';
-  try {
-    return decodeURIComponent(primero);
-  } catch {
-    return primero;
-  }
-}
+export { identificadorDeRuta, vistaDeRuta };
 
 /**
  * Raíz de la aplicación, sin enrutador ni estado global (research D15): la vista depende de la
@@ -28,6 +22,7 @@ export function identificadorDeRuta(ruta: string): string {
  */
 export function App() {
   const identificador = identificadorDeRuta(window.location.pathname);
+  const vista = vistaDeRuta(window.location.pathname);
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
 
   const cargarContexto = useCallback(async () => {
@@ -97,6 +92,18 @@ export function App() {
         />
       );
     case 'agenda':
-      return <PantallaAgenda contexto={estado.contexto} onSalir={() => setEstado({ tipo: 'acceso', sesionCaducada: false })} />;
+      return vista === 'analitica' ? (
+        <PantallaAnalitica
+          contexto={estado.contexto}
+          identificador={identificador}
+          onSalir={() => setEstado({ tipo: 'acceso', sesionCaducada: false })}
+        />
+      ) : (
+        <PantallaAgenda
+          contexto={estado.contexto}
+          identificador={identificador}
+          onSalir={() => setEstado({ tipo: 'acceso', sesionCaducada: false })}
+        />
+      );
   }
 }
