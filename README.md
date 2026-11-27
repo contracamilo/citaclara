@@ -25,7 +25,7 @@ docker compose up -d --build        # PostgreSQL, API y web
 docker compose run --rm semilla     # datos de demostración de Clínica Eleva
 ```
 
-Abre **http://localhost:8080/eleva** y entra con la clave **`eleva-demo-2026`**.
+Abre **http://localhost:8080/eleva** y entra con la clave **`eleva-demo-2026`**. La analítica (solo lectura: ocupación, no asistencias, ingresos y evolución de 8 semanas) está en **http://localhost:8080/eleva/analitica** y en el enlace «Analítica» de la cabecera. Las cifras de su spec solo se reproducen cargando la semilla en lunes.
 
 - `docker compose ps` debe mostrar `db` y `api` como *healthy*.
 - La semilla se puede repetir cuando quieras: borra y recrea Clínica Eleva. Toma el día de carga como referencia: la historia ocupa los 40 días laborables anteriores y el futuro los 10 siguientes. Las cifras exactas están en [`datos-demostracion.md`](specs/001-nucleo-agenda/datos-demostracion.md).
@@ -88,8 +88,8 @@ cd frontend && URL_BASE=http://localhost:8080 npm run e2e   # contra el entorno 
 ## Estructura
 
 ```text
-backend/            API Spring Boot, organizada por capacidad (acceso, clinica, paciente, cita, agenda, semilla)
-frontend/           SPA React (acceso, agenda, citas, ui, formato, api) y sus pruebas
+backend/            API Spring Boot, organizada por capacidad (acceso, clinica, paciente, cita, agenda, analitica, semilla)
+frontend/           SPA React (acceso, agenda, analitica, citas, ui, formato, api) y sus pruebas
 specs/              specs de Spec Kit; MAPA.md lista cada spec y su propietario
 scripts/            trazabilidad.sh
 docker-compose.yml  entorno completo

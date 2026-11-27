@@ -94,3 +94,57 @@ export function cuerpoEnviado(espia: ReturnType<typeof simularFetch>, metodo: st
 
 /** «40,00 €» con espacio no separable → con espacio normal (ver src/formato/euros.ts). */
 export const normalizarEspacios = (s: string) => s.replace(/[  ]/g, ' ');
+
+/* ------------------------------------------------------------------------------------------
+ * Analítica (specs/004-panel-analitica): cifras de la semilla de Clínica Eleva cargada en lunes.
+ * Orden del API: Jorge, Lucía, María.
+ * ---------------------------------------------------------------------------------------- */
+import type { Analitica, Proporcion } from '../../src/api/tipos';
+
+export function proporcion(parte: number, total: number): Proporcion {
+  return { parte, total, decimas: total === 0 ? null : Math.floor((2000 * parte + total) / (2 * total)) };
+}
+
+const lunes = ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23'];
+const domingos = ['2026-10-11', '2026-10-18', '2026-10-25', '2026-11-01', '2026-11-08', '2026-11-15', '2026-11-22', '2026-11-29'];
+const completadas = [110, 115, 105, 100, 114, 102, 109, 118];
+const noAsistidas = [11, 10, 18, 12, 10, 19, 16, 10];
+const canceladas = [14, 11, 9, 13, 10, 12, 9, 7];
+const ingresosSemana = [438000, 461000, 421000, 399000, 455000, 405000, 433000, 475000];
+// Minutos completados por semana: Jorge, Lucía, María.
+const minutos = [
+  [1680, 1740, 1425, 1410, 1470, 1170, 1665, 1590], // Jorge: 12.150 min en total
+  [1380, 1545, 1335, 1335, 1575, 1470, 1350, 1605], // Lucía: 11.595
+  [1545, 1560, 1680, 1440, 1710, 1575, 1530, 1800], // María: 12.840
+];
+
+export const analiticaEleva: Analitica = {
+  sinDatos: false,
+  ultimaSemana: {
+    semana: { inicio: '2026-11-23', fin: '2026-11-29' },
+    profesionales: [
+      { profesionalId: 1, nombre: 'Jorge', especialidadNombre: 'Fisioterapia', tasaNoAsistencia: proporcion(5, 41), ocupacion: proporcion(1590, 3300) },
+      { profesionalId: 3, nombre: 'Lucía', especialidadNombre: 'Nutrición', tasaNoAsistencia: proporcion(4, 55), ocupacion: proporcion(1605, 3300) },
+      { profesionalId: 2, nombre: 'María', especialidadNombre: 'Fisioterapia', tasaNoAsistencia: proporcion(1, 39), ocupacion: proporcion(1800, 3300) },
+    ],
+  },
+  ingresos: {
+    servicios: [
+      { servicioId: 11, nombre: 'Primera visita fisioterapia', citasCompletadas: 97, importeCentimos: 485000, citasNoAsistidas: 11, importeNoObtenidoCentimos: 55000 },
+      { servicioId: 10, nombre: 'Sesión fisioterapia', citasCompletadas: 426, importeCentimos: 1704000, citasNoAsistidas: 56, importeNoObtenidoCentimos: 224000 },
+      { servicioId: 12, nombre: 'Consulta nutrición', citasCompletadas: 277, importeCentimos: 969500, citasNoAsistidas: 27, importeNoObtenidoCentimos: 94500 },
+      { servicioId: 13, nombre: 'Primera visita nutrición', citasCompletadas: 73, importeCentimos: 328500, citasNoAsistidas: 12, importeNoObtenidoCentimos: 54000 },
+    ],
+    totalCentimos: 3487000,
+    totalNoObtenidoCentimos: 427500,
+  },
+  evolucion: lunes.map((inicio, i) => ({
+    semana: { inicio, fin: domingos[i]! },
+    completadas: completadas[i]!,
+    noAsistidas: noAsistidas[i]!,
+    canceladas: canceladas[i]!,
+    tasaNoAsistencia: proporcion(noAsistidas[i]!, completadas[i]! + noAsistidas[i]! + canceladas[i]!),
+    ingresosCentimos: ingresosSemana[i]!,
+    ocupacion: [1, 3, 2].map((profesionalId, p) => ({ profesionalId, ocupacion: proporcion(minutos[p]![i]!, 3300) })),
+  })),
+};
