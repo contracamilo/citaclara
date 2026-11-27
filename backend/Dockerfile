@@ -1,5 +1,5 @@
 # Etapa 1: construcción con Maven Wrapper sobre JDK 25
-FROM eclipse-temurin:25.0.5.1_2-jdk AS construccion
+FROM eclipse-temurin:27.0.1.1_4-jdk AS construccion
 WORKDIR /fuente
 COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
@@ -8,7 +8,7 @@ COPY src/ src/
 RUN ./mvnw -B -q package -DskipTests
 
 # Etapa 2: ejecución con JRE 25, usuario sin privilegios
-FROM eclipse-temurin:25.0.5.1_2-jre
+FROM eclipse-temurin:27.0.1.1_4-jre
 RUN groupadd --system citaclara && useradd --system --gid citaclara citaclara \
     && apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
