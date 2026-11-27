@@ -1,0 +1,293 @@
+openapi: 3.1.0
+info:
+  title: CitaClara — API del portal del paciente y aviso de cancelaciones (002-portal-paciente)
+  version: 0.1.0
+  description: |
+    Amplía el contrato de 001 (specs/001-nucleo-agenda/contracts/api.yaml), cuyas convenciones se mantienen:
+    mismo origen vía nginx, fechas `YYYY-MM-DD` y horas `HH:mm` locales de Madrid, importes en céntimos
+    enteros, errores Problem Details con `codigo` (para el programa) y `mensaje` (español de España, apto
+    para mostrarse tal cual), y todo POST solo en `application/json` (415 `TIPO_NO_ADMITIDO`).
+
+    - `/portal/**`: portal del paciente. Sesión propia de 30 minutos absolutos (research R4). Responde
+      401 `SIN_SESION_PORTAL` o `SESION_PORTAL_CADUCADA` sin sesión válida, salvo pedir enlace y abrir sesión.
+      Todas las respuestas llevan `Cache-Control: no-store`.
+    - `/cancelaciones-portal/**`: panel de recepción. Exige la sesión de la clínica de 001 (401 `SIN_SESION` /
+      `SESION_CADUCADA`). La sesión del portal no da acceso (FR-029).
+    - Para el nombre de la clínica en la entrada del portal se reutiliza `GET /clinicas/{identificador}` de 001.
+servers:
+  - url: /api
+
+paths:
+  /portal/{identificador}/enlaces:
+    post:
+      summary: Pedir un enlace de acceso al email de la ficha (US1-AC1, US1-AC3, US1-AC7)
+      description: |
+        Responde 202 tanto si el email coincide con alguna ficha como si no (FR-003). Solo envía el email
+        si coincide (FR-002). La 6.ª solicitud en una hora para el mismo email y clínica responde 429,
+        exista o no (FR-004, research R3).
+      operationId: pedirEnlace
+      parameters:
+        - $ref: '#/components/parameters/Identificador'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  maxLength: 254
+                  examples: ['teresa.mendez@ejemplo.es']
+      responses:
+        '202':
+          description: Solicitud aceptada (mismo cuerpo vacío para cualquier email con formato válido)
+        '400':
+          description: '`EMAIL_NO_VALIDO` — «Escribe un email válido, por ejemplo nombre@correo.es.»'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+        '404':
+          description: '`NO_ENCONTRADO` — la clínica no existe'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+        '429':
+          description: '`ENLACES_AGOTADOS` — «Has pedido demasiados enlaces. Espera unos minutos y vuelve a probar.»'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+
+  /portal/{identificador}/sesion:
+    post:
+      summary: Abrir la sesión del paciente con el secreto del enlace (US1-AC2, US1-AC4)
+      description: |
+        Consume el enlace de forma atómica: un solo uso, válido 10 minutos y solo en su clínica (FR-006,
+        research R1). Invalida cualquier sesión anterior del navegador, incluida la del panel (research R4).
+      operationId: abrirSesionPortal
+      parameters:
+        - $ref: '#/components/parameters/Identificador'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enlace]
+              properties:
+                enlace:
+                  type: string
+                  description: Secreto leído del fragmento `#enlace=…` de la URL
+      responses:
+        '204':
+          description: Sesión abierta (cookie de sesión `HttpOnly`, `SameSite=Strict`)
+        '401':
+          description: '`ENLACE_NO_VALIDO` — «Este enlace ya no es válido. Pide uno nuevo.» (usado, caducado, inexistente o de otra clínica)'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+
+  /portal/sesion:
+    delete:
+      summary: Salir del portal (US1-AC6)
+      operationId: cerrarSesionPortal
+      responses:
+        '204':
+          description: Sesión del portal cerrada (siempre 204, haya o no sesión)
+
+  /portal/citas:
+    get:
+      summary: Mis citas, próximas y pasadas (US2, FR-008–FR-011)
+      operationId: obtenerMisCitas
+      responses:
+        '200':
+          description: Citas de las fichas de la clínica con el email de la sesión
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MisCitas' }
+        '401':
+          $ref: '#/components/responses/SinSesionPortal'
+
+  /portal/citas/{citaId}/cancelacion:
+    post:
+      summary: Cancelar una cita propia dentro de plazo (US3, FR-012–FR-017)
+      description: |
+        Orden de comprobación en data-model.md («Reglas de validación…»). Si la cita ya estaba cancelada desde
+        el portal, responde 200 con la cita (idempotente, US3-AC7).
+      operationId: cancelarCitaPortal
+      parameters:
+        - name: citaId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version]
+              properties:
+                version:
+                  type: integer
+                  description: Versión de la cita que vio el paciente (bloqueo optimista, FR-016)
+      responses:
+        '200':
+          description: Cita cancelada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CitaPortal' }
+        '401':
+          $ref: '#/components/responses/SinSesionPortal'
+        '404':
+          description: '`NO_ENCONTRADO` — la cita no existe o no es de este paciente (FR-028)'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+        '409':
+          description: '`ESTADO_YA_CAMBIADO` — «Esta cita acaba de cambiar. Revisa su estado.»; incluye `citaActual`'
+          content:
+            application/problem+json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Problema'
+                  - type: object
+                    properties:
+                      citaActual: { $ref: '#/components/schemas/CitaPortal' }
+        '422':
+          description: '`FUERA_DE_PLAZO` — «Faltan menos de 24 horas para esta cita. Para cancelarla, llama a la clínica.»'
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problema' }
+
+  /cancelaciones-portal:
+    get:
+      summary: Aviso y lista de cancelaciones del portal pendientes de revisar (US4, FR-019, FR-020, FR-022)
+      operationId: obtenerCancelacionesPortal
+      responses:
+        '200':
+          description: Pendientes de la clínica de la sesión, de la más reciente a la más antigua
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pendientes, cancelaciones]
+                properties:
+                  pendientes:
+                    type: integer
+                    description: Número de cancelaciones sin revisar (0 → el aviso no se muestra)
+                  cancelaciones:
+                    type: array
+                    items: { $ref: '#/components/schemas/CancelacionPortal' }
+        '401':
+          description: '`SIN_SESION` / `SESION_CADUCADA` (sesión del panel, 001)'
+
+  /cancelaciones-portal/{citaId}/revision:
+    post:
+      summary: Marcar una cancelación del portal como revisada (US4-AC3, US4-AC5, FR-021)
+      description: Idempotente; marcarla de nuevo, o a la vez desde dos puestos, responde 204 sin cambios.
+      operationId: marcarCancelacionRevisada
+      parameters:
+        - name: citaId
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '204':
+          description: Revisada
+        '401':
+          description: '`SIN_SESION` / `SESION_CADUCADA` (sesión del panel, 001)'
+        '404':
+          description: '`NO_ENCONTRADO` — no existe una cancelación del portal para esa cita en esta clínica'
+
+components:
+  parameters:
+    Identificador:
+      name: identificador
+      in: path
+      required: true
+      schema: { type: string, pattern: '^[a-z0-9-]+$' }
+      examples:
+        eleva: { value: eleva }
+
+  responses:
+    SinSesionPortal:
+      description: |
+        `SIN_SESION_PORTAL` — «Entra con el enlace que te enviamos por email para ver tus citas.»
+        `SESION_PORTAL_CADUCADA` — «Tu acceso ha caducado. Pide un enlace nuevo para ver tus citas.»
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problema' }
+
+  schemas:
+    Problema:
+      type: object
+      required: [codigo, mensaje]
+      properties:
+        codigo: { type: string }
+        mensaje: { type: string }
+
+    MisCitas:
+      type: object
+      required: [clinicaNombre, pacientes, proximas, pasadas]
+      properties:
+        clinicaNombre: { type: string, examples: ['Clínica Eleva'] }
+        pacientes:
+          type: array
+          description: Nombres de las fichas con este email (saludo; si hay más de una, cada cita indica su paciente)
+          items: { type: string }
+          examples: [['Teresa Méndez']]
+        proximas:
+          type: array
+          description: Reservadas no iniciadas, de la más próxima a la más lejana
+          items: { $ref: '#/components/schemas/CitaPortal' }
+        pasadas:
+          type: array
+          description: Resto, de la más reciente a la más antigua
+          items: { $ref: '#/components/schemas/CitaPortal' }
+
+    CitaPortal:
+      type: object
+      required: [id, version, paciente, fecha, horaInicio, horaFin, profesional, servicio, importeCentimos, estadoPortal, cancelable]
+      properties:
+        id: { type: integer, format: int64 }
+        version: { type: integer }
+        paciente: { type: string, examples: ['Teresa Méndez'] }
+        fecha: { type: string, format: date, description: 'Local de Madrid, YYYY-MM-DD' }
+        horaInicio: { type: string, examples: ['10:15'] }
+        horaFin: { type: string, examples: ['11:15'] }
+        profesional: { type: string, examples: ['María'] }
+        servicio: { type: string, examples: ['Primera visita fisioterapia'] }
+        importeCentimos: { type: integer, examples: [5000] }
+        estadoPortal:
+          type: string
+          enum: [RESERVADA, PENDIENTE_CIERRE, REALIZADA, NO_ACUDISTE, CANCELADA]
+          description: Ver data-model.md («Vista de cita en el portal»); la etiqueta visible está en contracts/ui.md
+        cancelable: { type: boolean }
+        motivoNoCancelable:
+          type: [string, 'null']
+          description: 'Mensaje listo para mostrar cuando `estadoPortal = RESERVADA` y `cancelable = false`'
+          examples: ['Faltan menos de 24 horas para esta cita. Para cancelarla, llama a la clínica.']
+
+    CancelacionPortal:
+      type: object
+      required: [citaId, paciente, profesional, fecha, horaInicio, horaFin, servicio, canceladaFecha, canceladaHora, huecoPasado]
+      properties:
+        citaId: { type: integer, format: int64 }
+        paciente: { type: string, examples: ['Laura Romero'] }
+        profesional: { type: string, examples: ['Jorge'] }
+        fecha: { type: string, format: date }
+        horaInicio: { type: string, examples: ['09:45'] }
+        horaFin: { type: string, examples: ['10:30'] }
+        servicio: { type: string, examples: ['Sesión fisioterapia'] }
+        canceladaFecha: { type: string, format: date }
+        canceladaHora: { type: string, examples: ['09:00'] }
+        huecoPasado:
+          type: boolean
+          description: El inicio del hueco ya ha llegado (US4-AC6)

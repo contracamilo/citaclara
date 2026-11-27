@@ -47,7 +47,7 @@ Un paciente de la clínica abre el portal desde su móvil, escribe el email que 
 
 **Escenarios de aceptación**:
 
-1. **Dado** que Teresa Méndez es paciente de Clínica Eleva con email teresa.mendez@ejemplo.es, **cuando** lo escribe en el portal de la clínica y pide el enlace, **entonces** ve «Si tu email está registrado en Clínica Eleva, te hemos enviado un enlace para entrar. Revisa tu correo; el enlace caduca en 10 minutos.» y recibe en ese email un enlace de acceso.
+1. **Dado** que Teresa Méndez es paciente de Clínica Eleva con email teresa.mendez@ejemplo.es, **cuando** lo escribe en el portal de la clínica y pide el enlace, **entonces** ve «Si tu email está registrado en Clínica Eleva, te hemos enviado un enlace para entrar. Revisa tu correo; el enlace caduca en 10 minutos. Si no te llega, llama a la clínica.» y recibe en ese email un enlace de acceso.
 2. **Dado** que Teresa abre el enlace recibido antes de 10 minutos, **cuando** se carga el portal, **entonces** entra en su página personal sin haber creado cuenta ni contraseña.
 3. **Dado** un email que no corresponde a ninguna ficha de la clínica, **cuando** alguien pide el enlace, **entonces** ve exactamente el mismo mensaje que en el escenario 1 y no se envía ningún email.
 4. **Dado** un enlace ya usado o emitido hace más de 10 minutos, **cuando** alguien lo abre, **entonces** no entra y ve «Este enlace ya no es válido. Pide uno nuevo.» con la opción de pedirlo.
