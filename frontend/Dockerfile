@@ -1,5 +1,5 @@
 # Etapa 1: construcción con Node 24 LTS (versión fijada)
-FROM node:24.21.0-alpine AS construccion
+FROM node:26.13.1-alpine AS construccion
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
