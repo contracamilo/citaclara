@@ -8,6 +8,15 @@
 
 **Input**: User description: "Auditoría de seguridad. Ya que tendrá información de pacientes y pagos debemos hacer que el desarrollo cumpla protocolos de seguridad, para evitar brechas: evaluar sobre STRIPE y OWASP Top 10 2026, proponer mejoras tanto en back y front si es necesario"
 
+## Clarifications
+
+### Session 2026-11-27
+
+- Q: ¿Esta feature debe limitarse a entregar el informe y el plan de mejoras, o también debe corregir los hallazgos críticos y altos? → A: Informe más corrección en esta feature de los hallazgos críticos y altos que no afecten a specs ajenas; el resto, en seguimiento.
+- Q: ¿Quién introducirá el pago con tarjeta cuando CitaClara cobre? → A: Ambos: recepción (panel autenticado) y paciente en línea (sin sesión de clínica).
+- Q: ¿Cuánto tiempo debe conservarse un dato de paciente tras su última cita? → A: 5 años desde la última cita y después anonimizar.
+- Q: Si la clave compartida por clínica resulta un riesgo alto, ¿se corrige en esta feature o se deriva a la spec 001? → A: Se corrige en esta feature introduciendo usuarios individuales, lo que modifica la spec 001 con la aprobación previa de su propietario.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Informe de auditoría contra OWASP Top 10 (Priority: P1)
@@ -111,10 +120,12 @@ El equipo necesita que lo auditado no se degrade. Se proponen controles automát
 - **FR-008**: La auditoría DEBE evaluar el registro de eventos de seguridad (accesos fallidos, accesos a datos de pacientes, errores de autorización) y la capacidad de detectar un abuso, sin que los registros contengan datos personales innecesarios.
 - **FR-009**: La auditoría DEBE evaluar la resistencia a abuso y a sobrecarga (límites de peticiones, tamaños máximos de entrada, operaciones costosas) sin afectar al uso normal de recepción.
 - **FR-010**: La auditoría DEBE incluir una lista de comprobación de las prácticas de seguridad de Stripe y de PCI DSS para comercios que delegan la captura de tarjeta, con veredicto por punto.
-- **FR-011**: El informe DEBE fijar requisitos de seguridad obligatorios para cualquier integración futura de cobros, incluyendo como mínimo: ningún dato de tarjeta pasa por CitaClara ni se almacena; verificación de la autenticidad de cada aviso de Stripe; tratamiento idempotente de avisos repetidos o desordenados; importe decidido siempre por el sistema; claves secretas fuera del código; y conciliación al céntimo entre CitaClara y Stripe (Principio II).
-- **FR-012**: La auditoría DEBE inventariar los datos personales y de salud de pacientes (dónde se guardan, quién accede, conservación, protección) y evaluar si pueden atenderse solicitudes de acceso, rectificación y supresión del RGPD.
+- **FR-011**: El informe DEBE fijar requisitos de seguridad obligatorios para cualquier integración futura de cobros, incluyendo como mínimo: ningún dato de tarjeta pasa por CitaClara ni se almacena; verificación de la autenticidad de cada aviso de Stripe; tratamiento idempotente de avisos repetidos o desordenados; importe decidido siempre por el sistema; claves secretas fuera del código; y conciliación al céntimo entre CitaClara y Stripe (Principio II). Los requisitos DEBEN cubrir los dos orígenes de pago: recepción desde el panel autenticado y paciente en línea sin sesión de clínica; en este último, ningún paciente puede ver, iniciar ni modificar el cobro de otro, y los enlaces o referencias de pago no son adivinables ni reutilizables tras completarse o caducar.
+- **FR-012**: La auditoría DEBE inventariar los datos personales y de salud de pacientes (dónde se guardan, quién accede, conservación, protección) y evaluar si pueden atenderse solicitudes de acceso, rectificación y supresión del RGPD. El plazo de referencia de conservación es de 5 años desde la última cita del paciente, tras el cual los datos personales se anonimizan sin alterar los importes ni los totales históricos (Principio II); la auditoría comprueba si el sistema puede cumplirlo y, si no, lo registra como hallazgo.
 - **FR-013**: El informe DEBE incluir un plan de mejoras priorizado por riesgo, con esfuerzo relativo, parte afectada y criterio de aceptación verificable por cada hallazgo crítico o alto.
-- **FR-014**: Las mejoras que cambien comportamiento de otras specs o requieran funcionalidad nueva DEBEN proponerse como specs nuevas o como solicitudes a los propietarios, y quedar registradas en `specs/MAPA.md`; esta feature no modifica specs ajenas.
+- **FR-020**: Esta feature DEBE corregir los hallazgos de severidad crítica y alta cuya corrección no cambie el comportamiento definido en specs ajenas; cada corrección DEBE ir acompañada de una prueba que reproduzca el hallazgo y compruebe que ya no ocurre. Los hallazgos medios y bajos, y los críticos o altos que sí afecten a specs ajenas, quedan en el plan de seguimiento.
+- **FR-021**: Si la auditoría califica de alto o crítico el acceso mediante una clave compartida por clínica, esta feature DEBE sustituirlo por acceso con usuarios individuales por clínica, de forma que cada acceso a datos de pacientes y cada operación quede atribuida a una persona concreta y pueda revocarse sin afectar al resto. Al ser un cambio de comportamiento de la spec 001, requiere la aprobación previa de su propietario y su actualización (Principio I) antes de implementarse; el acceso de recepción debe seguir siendo usable sin formación (Principio VII).
+- **FR-014**: Salvo lo previsto en FR-021, las mejoras que cambien comportamiento de otras specs o requieran funcionalidad nueva DEBEN proponerse como specs nuevas o como solicitudes a los propietarios, y quedar registradas en `specs/MAPA.md`; esta feature no modifica specs ajenas.
 - **FR-015**: Toda mejora propuesta DEBE mantener los mensajes visibles para el usuario en español de España y sin jerga técnica; los motivos técnicos de un rechazo de seguridad no se muestran en pantalla.
 - **FR-016**: La auditoría DEBE proponer controles automáticos en el proceso de integración (dependencias vulnerables, secretos en el repositorio, pruebas de seguridad repetibles) que bloqueen el merge ante una regresión.
 - **FR-017**: Las pruebas de seguridad que se creen como evidencia DEBEN referenciar su hallazgo o requisito mediante el esquema de trazabilidad del proyecto, y la suite completa DEBE seguir en verde.
@@ -140,16 +151,18 @@ El equipo necesita que lo auditado no se degrade. Se proponen controles automát
 - **SC-005**: Todos los datos personales y de salud de pacientes están inventariados, y cero datos personales innecesarios aparecen en registros y mensajes de error.
 - **SC-006**: Intentar acceder a datos de otra clínica por cualquier vía auditada produce cero accesos y la misma respuesta que un recurso inexistente.
 - **SC-007**: Una regresión de seguridad introducida a propósito (dependencia vulnerable o secreto) bloquea el merge en el 100 % de los intentos de prueba.
-- **SC-008**: Tras aplicar las mejoras de severidad crítica y alta, una reauditoría no encuentra hallazgos críticos ni altos abiertos.
+- **SC-008**: Tras aplicar las correcciones de esta feature, una reauditoría no encuentra hallazgos críticos ni altos abiertos, salvo los que dependen de una spec ajena, que constan con su solicitud al propietario registrada.
 - **SC-009**: El personal de recepción completa sus tareas habituales (iniciar sesión, buscar paciente, reservar cita) sin pasos adicionales ni mensajes técnicos tras las mejoras.
 
 ## Assumptions
 
-- El entregable de esta feature es el informe de auditoría y el plan de mejoras; la corrección de los hallazgos se ejecuta en features o specs de seguimiento, salvo cambios mínimos de bajo riesgo que el plan justifique (Principio IV, sin alcance fantasma).
+- El entregable de esta feature es el informe de auditoría, el plan de mejoras y la corrección de los hallazgos críticos y altos que no afecten a specs ajenas (FR-020); el resto se ejecuta en features o specs de seguimiento (Principio IV, sin alcance fantasma).
+- Los cobros los podrán iniciar tanto recepción como el paciente en línea (portal de la spec 002); la auditoría trata el acceso público sin sesión como superficie de ataque a evaluar.
 - CitaClara aún no integra cobros: la evaluación de Stripe cubre la preparación y los requisitos de la integración futura, y no construye ninguna integración de Stripe.
 - Se asume el modelo de Stripe en el que la captura de tarjeta la realiza Stripe (la tarjeta nunca toca CitaClara), lo que reduce el alcance PCI DSS al mínimo para comercios.
 - «OWASP Top 10 2026» se interpreta como la edición vigente más reciente del OWASP Top 10 en la fecha de la auditoría; el informe cita la edición exacta usada.
-- Se asume que los datos de pacientes se tratan como datos de salud bajo el RGPD y la normativa española aplicable; la validación jurídica final queda fuera del alcance técnico y corresponde a la clínica o a su asesoría legal.
+- Se asume que los datos de pacientes se tratan como datos de salud bajo el RGPD y la normativa española aplicable; el plazo de conservación de 5 años es una referencia técnica, no asesoramiento jurídico; la validación jurídica final queda fuera del alcance técnico y corresponde a la clínica o a su asesoría legal.
 - La auditoría se hace sobre el código y los entornos locales o de demostración de la rama principal en el momento de empezar, con herramientas estándar de análisis y revisión manual.
+- La corrección de la clave compartida (FR-021) depende de que el propietario de la spec 001 apruebe el cambio; hasta entonces se mantiene el acceso actual y la solicitud queda registrada en `specs/MAPA.md`.
 - Otras features en paralelo (portal del paciente, recordatorios, panel de analítica) amplían la superficie de ataque; los requisitos de seguridad resultantes se registran para que sus propietarios los apliquen, sin editar sus specs.
 - Fuera de alcance: pentesting contra producción real, certificación formal (PCI DSS, ENS, ISO 27001), auditoría de la infraestructura del proveedor de alojamiento y construcción de la integración de pagos.

@@ -32,4 +32,4 @@
 ## Notes
 
 - Stripe, OWASP, RGPD y PCI DSS son marcos normativos del dominio, no detalles de implementación.
-- Supuesto clave a confirmar en `/speckit-clarify`: el entregable es informe + plan de mejoras; la corrección va en features de seguimiento.
+- Alcance confirmado en clarificación (2026-11-27): informe + plan + corrección de críticos y altos que no afecten a specs ajenas.
